@@ -52,13 +52,22 @@ class _Net_recurse(torch.nn.Module):
             return self.sub_2conv_more(x)
         else:  # depth > 0
             x_2conv_more = self.sub_2conv_more(x)
+            #print('b', x_2conv_more.size())
             x_conv_down = self.conv_down(x_2conv_more)
+            #print('c', x_conv_down.size())
             x_bn0 = self.bn0(x_conv_down)
+            #print('d', x_bn0.size())
             x_relu0 = self.relu0(x_bn0)
+            #print('e', x_relu0.size())
             x_sub_u = self.sub_u(x_relu0)
+            #print('f', x_sub_u.size())
             x_convt = self.convt(x_sub_u)
+            #print('g', x_sub_u.size())
             x_bn1 = self.bn1(x_convt)
+            #print('h', x_sub_u.size())
             x_relu1 = self.relu1(x_bn1)
+            #print('i', x_relu1.size())
+            
             x_cat = torch.cat((x_2conv_more, x_relu1), 1)  # concatenate
             x_2conv_less = self.sub_2conv_less(x_cat)
         return x_2conv_less
@@ -81,3 +90,4 @@ class SubNet2Conv(torch.nn.Module):
         x = self.bn2(x)
         x = self.relu2(x)
         return x
+

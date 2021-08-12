@@ -6,6 +6,11 @@ from tqdm import tqdm
 
 import pdb
 
+import random
+
+def decision(probability):
+    return random.random() < probability
+
 
 class BufferedPatchDataset(FnetDataset):
     """Dataset that provides chunks/patchs from another dataset."""
@@ -20,7 +25,11 @@ class BufferedPatchDataset(FnetDataset):
                  transform = None,
                  shuffle_images = True,
                  dim_squeeze = None,
+                 threshold_backround = 0.2,
+                 resampling_probability = 0.7
     ):
+        self.threshold_back = threshold_backround
+        self.resampling_prob = resampling_probability
         
         self.counter = 0
         
@@ -61,8 +70,9 @@ class BufferedPatchDataset(FnetDataset):
             
         self.remaining_to_be_in_buffer = shuffed_data_order[i+1:]
             
-        self.patch_size = [datum_size[0]] + patch_size
-
+        self.patch_size = patch_size #[datum_size[0]] + patch_size # e.g. [1,16,128,128]
+        self.img_size = datum_size[1], datum_size[2]
+        
             
     def __len__(self):
         return self.npatches
@@ -74,8 +84,24 @@ class BufferedPatchDataset(FnetDataset):
             if self.verbose: print("Inserting new item into buffer")
                 
             self.insert_new_element_into_buffer()
+        patch = self.get_random_patch()
         
-        return self.get_random_patch()
+        found_patch = False
+        
+        while not found_patch:
+            patch = self.get_random_patch()
+            if decision(self.resampling_prob): # will be true self.resampling_prob*100% of the time
+                # if patch is more than threshold_back % foreground
+                if torch.sum(patch[-1]) > self.threshold_back * np.prod(self.patch_size): 
+                    # keep this patch
+                    found_patch = True
+                # else sample another patch
+                else:
+                    found_patch = False
+            else:
+                found_patch = True
+       
+        return patch
                        
     def insert_new_element_into_buffer(self):
         #sample with replacement
@@ -106,18 +132,27 @@ class BufferedPatchDataset(FnetDataset):
         
         buffer_index = np.random.randint(len(self.buffer))
                                    
-        datum = self.buffer[buffer_index]
+        datum = self.buffer[buffer_index] # datum will be a list with input, target, dapi, threshold
 
-        starts = np.array([np.random.randint(0, d - p + 1) if d - p + 1 >= 1 else 0 for d, p in zip(datum[0].size(), self.patch_size)])
+        # start and end set at random loc each time
+        starts_xy = [np.random.randint(0, d - p + 1) if d - p + 1 >= 1 else 0 for d, p in zip(self.img_size, self.patch_size)] # d in [1,20,1109,1107] p in [1,16,128,128]
+        ends_xy = [x+y for x,y in zip(starts_xy,self.patch_size)]
+        
+        patch = []
+        
+        for d in datum:
+            starts = np.array([0, starts_xy[0], starts_xy[1]])
+            ends = np.array([d.size()[0], ends_xy[0], ends_xy[1]])
+            #thank you Rory for this weird trick
+            index = [slice(s, e) for s,e in zip(starts,ends)]
+            temp = d[tuple(index)]
+            patch.append(temp)
 
-        ends = starts + np.array(self.patch_size)
+        #patch = [d[tuple(index)] for d in datum]
         
-        #thank you Rory for this weird trick
-        index = [slice(s, e) for s,e in zip(starts,ends)]
-        
-        patch = [d[tuple(index)] for d in datum]
         if self.dim_squeeze is not None:
             patch = [torch.squeeze(d, self.dim_squeeze) for d in patch]
+
         return patch
     
     def get_buffer_history(self):
@@ -139,4 +174,3 @@ def _test():
     
 if __name__ == '__main__':
     _test()
-

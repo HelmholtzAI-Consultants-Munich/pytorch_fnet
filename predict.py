@@ -1,5 +1,6 @@
 import argparse
 import fnet.data
+from fnet.functions import pearsonr, compute_dataset_min_max_ranges
 import importlib
 import json
 import numpy as np
@@ -16,29 +17,60 @@ def set_warnings():
     warnings.filterwarnings('ignore', message='.*end of stream*')
     warnings.filterwarnings('ignore', message='.*multiple of element size.*')
 
-def get_dataset(opts, propper):
-    transform_signal = [eval(t) for t in opts.transform_signal]
-    transform_target = [eval(t) for t in opts.transform_target]
+def get_dataset(config, propper):
+
+    path_csvs = os.path.join(config['data_path'], 'csvs')
+    path_dataset_csv = os.path.join(path_csvs, ('.').join([config['dataset'],'csv'])) 
+    path_test_dataset_csv = os.path.join(config['data_path'], 'csvs', config['dataset'], 'test.csv') #path_dataset_test_csv: ["./data/csvs/new_exp_eg/test.csv"]
+    min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(path_dataset_csv)
+    min_max_bright_norm, _, _ = compute_dataset_min_max_ranges(path_dataset_csv, norm=True)
+
+    transform_signal=[]
+    for t in config['preprocessing']['transform_signal']:
+        if t=='fnet.transforms.AdaptRange':
+            t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(min_max_bright_norm[0], min_max_bright_norm[1])  
+        transform_signal.append(eval(t))
+    transform_target = [eval(t) for t in config['preprocessing']['transform_target']]
+    transform_thresh = []
+
     transform_signal.append(propper)
-    transform_target.append(propper)
-    ds = getattr(fnet.data, opts.class_dataset)(
-        path_csv = opts.path_dataset_csv,
+    transform_target.append(propper) 
+    transform_thresh.append(propper)
+        
+    ds = getattr(fnet.data, config['class_dataset'])(
+        path_csv = path_test_dataset_csv,
         transform_source = transform_signal,
         transform_target = transform_target,
+        transform_thresh = transform_thresh,
+        min_max_bright = min_max_bright, 
+        min_max_dapi = min_max_dapi, 
+        min_max_infection = min_max_infection)
+
+    
+    ds_patch = fnet.data.AllPatchesDataset(
+        dataset = ds,
+        patch_size = [2048, 2048], #config['patch_size'],
+        buffer_size = 1, #opts.n_images,
+        buffer_switch_frequency = 1, #-1,
+        verbose = False
     )
-    print(ds)
-    return ds
+    
+    dataloader = torch.utils.data.DataLoader(
+        ds_patch, #ds
+        batch_size = 1, #['batch_size'],
+    )
+    return dataloader, ds_patch
+
 
 def save_tiff_and_log(tag, ar, path_tiff_dir, entry, path_log_dir):
     if not os.path.exists(path_tiff_dir):
         os.makedirs(path_tiff_dir)
     path_tiff = os.path.join(path_tiff_dir, '{:s}.tiff'.format(tag))
     tifffile.imsave(path_tiff, ar)
-    print('saved:', path_tiff)
     entry['path_' + tag] = os.path.relpath(path_tiff, path_log_dir)
 
-def get_prediction_entry(dataset, index):
-    info = dataset.get_information(index)
+def get_prediction_entry(ds, index):
+    info = ds.get_information(index)
     # In the case where 'path_signal', 'path_target' keys exist in dataset information,
     # replace with 'path_signal_dataset', 'path_target_dataset' to avoid confusion with
     # predict.py's 'path_signal' and 'path_target'.
@@ -51,68 +83,93 @@ def get_prediction_entry(dataset, index):
     if isinstance(info, str):
         return {'information': info}
     raise AttributeError
-    
-def main():
-    # set_warnings()
-    factor_yx = 0.37241  # 0.108 um/px -> 0.29 um/px
-    default_resizer_str = 'fnet.transforms.Resizer((1, {:f}, {:f}))'.format(factor_yx, factor_yx)
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--class_dataset', default='CziDataset', help='Dataset class')
-    parser.add_argument('--gpu_ids', type=int, default=0, help='GPU ID')
-    parser.add_argument('--module_fnet_model', default='fnet_model', help='module with fnet_model')
-    parser.add_argument('--n_images', type=int, default=16, help='max number of images to test')
-    parser.add_argument('--no_prediction', action='store_true', help='set to not save prediction image')
-    parser.add_argument('--no_prediction_unpropped', action='store_true', help='set to not save unpropped prediction image')
-    parser.add_argument('--no_signal', action='store_true', help='set to not save signal image')
-    parser.add_argument('--no_target', action='store_true', help='set to not save target image')
-    parser.add_argument('--path_dataset_csv', type=str, help='path to csv for constructing Dataset')
-    parser.add_argument('--path_model_dir', nargs='+', default=[None], help='path to model directory')
-    parser.add_argument('--path_save_dir', help='path to output directory')
-    parser.add_argument('--propper_kwargs', type=json.loads, default={}, help='path to output directory')
-    parser.add_argument('--transform_signal', nargs='+', default=['fnet.transforms.normalize', default_resizer_str], help='list of transforms on Dataset signal')
-    parser.add_argument('--transform_target', nargs='+', default=['fnet.transforms.normalize', default_resizer_str], help='list of transforms on Dataset target')
-    opts = parser.parse_args()
 
-    if os.path.exists(opts.path_save_dir):
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config',type=str, help='config dictionary')
+    opts = parser.parse_args()
+    with open(opts.config, "r") as fp:
+        config = json.load(fp)
+
+    config['path_save_dir'] = os.path.join(config['path_run_dir'], 'results')
+    if os.path.exists(config['path_save_dir']):
         print('Output path already exists.')
         return
-    if opts.class_dataset == 'TiffDataset':
-        if opts.propper_kwargs.get('action') == '-':
-            opts.propper_kwargs['n_max_pixels'] = 6000000
-    propper = fnet.transforms.Propper(**opts.propper_kwargs)
+
+    if config['class_dataset'] == 'TiffDataset':
+        if config['prediction']['propper_kwargs'] == '-':
+            config['prediction']['propper_kwargs']['n_max_pixels'] = 6000000
+    propper = fnet.transforms.Propper(action='+') #, padding=[4,0])#**opts.propper_kwargs)
     print(propper)
     model = None
-    dataset = get_dataset(opts, propper)
+    dataset, ds = get_dataset(config, propper)
     entries = []
-    indices = range(len(dataset)) if opts.n_images < 0 else range(min(opts.n_images, len(dataset)))
-    for idx in indices:
-        entry = get_prediction_entry(dataset, idx)
-        data = [torch.unsqueeze(d, 0) for d in dataset[idx]]  # make batch of size 1
-        signal = data[0]
-        target = data[1] if (len(data) > 1) else None
-        path_tiff_dir = os.path.join(opts.path_save_dir, '{:02d}'.format(idx))
-        if not opts.no_signal:
-            save_tiff_and_log('signal', signal.numpy()[0, ], path_tiff_dir, entry, opts.path_save_dir)
-        if not opts.no_target and target is not None:
-            save_tiff_and_log('target', target.numpy()[0, ], path_tiff_dir, entry, opts.path_save_dir)
+    predicted_patches = []
+    
+    indices = len(dataset) if config['prediction']['n_images'] < 0 else min(config['prediction']['n_images'], len(dataset))
+    if config['prediction']['return_score']:
+        pearson = np.zeros(len(config['prediction']['path_model_dir']))
 
-        for path_model_dir in opts.path_model_dir:
-            if (path_model_dir is not None) and (model is None or len(opts.path_model_dir) > 1):
-                model = fnet.load_model(path_model_dir, opts.gpu_ids, module=opts.module_fnet_model)
+    for idx, sample in enumerate(dataset):
+        if idx==indices:
+            break
+        patch, is_last = sample['patch'], sample['is_last']
+        #data = [torch.unsqueeze(d, 0) for d in patch]  # make batch of size 1
+        signal = patch[0]
+        target = patch[1] if (len(patch) > 1) else None
+        for model_idx, path_model_dir in enumerate(config['prediction']['path_model_dir']):
+            if (path_model_dir is not None) and (model is None or len(config['prediction']['path_model_dir']) > 1):
+                model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
                 print(model)
                 name_model = os.path.basename(path_model_dir)
+            if config['in_channels']==2:
+                signal = torch.cat([signal, patch[2]],  dim=1)
             prediction = model.predict(signal) if model is not None else None
-            if not opts.no_prediction and prediction is not None:
-                save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.numpy()[0, ], path_tiff_dir, entry, opts.path_save_dir)
-            if not opts.no_prediction_unpropped:
-                ar_pred_unpropped = propper.undo_last(prediction.numpy()[0, 0, ])
-                save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped, path_tiff_dir, entry, opts.path_save_dir)
-        entries.append(entry)
+
+            if is_last:
+                predicted_patches.append(prediction)
+                entry = get_prediction_entry(ds, idx)
+                prediction = ds.repatch(predicted_patches)
+                # save images
+                path_tiff_dir = os.path.join(config['path_save_dir'], '{:02d}'.format(idx))
+                signal, target = ds.get_current_image_target(idx)
+
+                if config['prediction']['return_score']:
+                    pearson[model_idx] += pearsonr(prediction, target)
+
+                target = target.numpy()[0, ]
+                #target = np.argmax(target, axis=0)
+                signal = signal.numpy()[0, ]
+    
+                if not config['prediction']['no_signal']:
+                    save_tiff_and_log('signal', signal, path_tiff_dir, entry, config['path_save_dir'])
+                if not config['prediction']['no_target'] and target is not None:
+                    save_tiff_and_log('target', target.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                
+                prediction = prediction.squeeze().numpy()#[0, ]
+                #prediction = np.argmax(prediction, axis=0)
+                if not config['prediction']['no_prediction'] and prediction is not None:
+                    save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                if not config['prediction']['no_prediction_unpropped']:
+                    #ar_pred_unpropped = propper.undo_last(prediction.numpy()[0, ])
+                    ar_pred_unpropped = propper.undo_last(prediction)
+                    save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                
+                entries.append(entry)
+                predicted_patches = []
+            else:
+                predicted_patches.append(prediction)
         
-    with open(os.path.join(opts.path_save_dir, 'predict_options.json'), 'w') as fo:
-        json.dump(vars(opts), fo, indent=4, sort_keys=True)
-    pd.DataFrame(entries).to_csv(os.path.join(opts.path_save_dir, 'predictions.csv'), index=False)
-        
+    #with open(os.path.join(config['path_save_dir'], 'predict_options.json'), 'w') as fo:
+        #json.dump(config, fp)
+    pd.DataFrame(entries).to_csv(os.path.join(config['path_save_dir'], 'predictions.csv'), index=False)
+    
+    if config['prediction']['return_score']:
+        return pearson
+    else:
+        return
+    
 
 if __name__ == '__main__':
+
     main()

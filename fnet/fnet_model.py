@@ -2,6 +2,9 @@ import os
 import torch
 import importlib
 import pdb
+from fnet.functions import pearsonr
+import math
+
 
 class Model(object):
     def __init__(
@@ -9,12 +12,22 @@ class Model(object):
             nn_module = None,
             init_weights = True,
             lr = 0.001,
-            criterion_fn = torch.nn.MSELoss, 
-            nn_kwargs={},
+            criterion_fn = torch.nn.MSELoss, #torch.nn.torch.nn.SmoothL1Loss, #DiceLoss, #torch.nn.L1Loss, # #(reduction='none'), #CrossEntropyLoss,
+            dropout=0,
+            in_channels=1,
+            out_channels=1,
+            depth = 4,
             gpu_ids = -1,
+            loss_weight = 0.5,
+            min_dif=0.08,
+            max_dif=0.35,
+            nn_kwargs={}
     ):
         self.nn_module = nn_module
         self.nn_kwargs = nn_kwargs
+        self.dropout = dropout
+        self.input_channels = in_channels
+        self.out_channels = out_channels
         self.init_weights = init_weights
         self.lr = lr
         self.criterion_fn = criterion_fn
@@ -22,14 +35,18 @@ class Model(object):
         self.gpu_ids = [gpu_ids] if isinstance(gpu_ids, int) else gpu_ids
         self.device = torch.device('cuda', self.gpu_ids[0]) if self.gpu_ids[0] >= 0 else torch.device('cpu')
         
-        self.criterion = criterion_fn()
+        self.criterion = criterion_fn(reduction='none')
         self._init_model(nn_kwargs=self.nn_kwargs)
-
+        
+        self.loss_weight = loss_weight
+        self.min_dif = min_dif
+        self.max_dif = max_dif
+        
     def _init_model(self, nn_kwargs={}):
         if self.nn_module is None:
             self.net = None
             return
-        self.net = importlib.import_module('fnet.nn_modules.' + self.nn_module).Net(**nn_kwargs)
+        self.net = importlib.import_module('fnet.nn_modules.' + self.nn_module).Net(dropout_p=self.dropout, in_channels=self.input_channels, out_channels=self.out_channels)
         if self.init_weights:
             self.net.apply(_weights_init)
         self.net.to(self.device)
@@ -79,10 +96,21 @@ class Model(object):
         self.count_iter = state_dict['count_iter']
         self.to_gpu(gpu_ids)
 
-    def do_train_iter(self, signal, target):
+    def do_train_iter(self, signal, target, dif_dapi_inf):
         self.net.train()
-        signal = torch.tensor(signal, dtype=torch.float32, device=self.device)
-        target = torch.tensor(target, dtype=torch.float32, device=self.device)
+        
+        dif_mean = torch.mean(dif_dapi_inf, dim=(1,2,3))
+
+        for it,dif_mean_it in enumerate(dif_mean):
+            if dif_mean_it>self.min_dif and dif_mean_it<self.max_dif:
+                dif_mean[it] = self.loss_weight
+            else:
+                dif_mean[it] = 10-self.loss_weight #1-self.loss_weight
+        dif_mean = dif_mean.clone().detach().requires_grad_(True).to(self.device)
+
+        signal = signal.clone().detach().requires_grad_(True).to(self.device)
+        target = target.clone().detach().requires_grad_(True).to(self.device)
+        
         if len(self.gpu_ids) > 1:
             module = torch.nn.DataParallel(
                 self.net,
@@ -93,13 +121,24 @@ class Model(object):
         self.optimizer.zero_grad()
         output = module(signal)
         loss = self.criterion(output, target)
+        # get mean per sample in batch
+        loss = torch.mean(loss, dim=(1,2,3))
+        loss = loss * dif_mean
+        loss = torch.mean(loss)
         loss.backward()
         self.optimizer.step()
         self.count_iter += 1
-        return loss.item()
+        
+        pearson_train = pearsonr(output, target)
+        if math.isnan(pearson_train):
+            pearson_train=0
+            
+        return loss.item(), pearson_train
     
     def predict(self, signal):
-        signal = torch.tensor(signal, dtype=torch.float32, device=self.device)
+        #signal = torch.tensor(signal, dtype=torch.float32, device=self.device)
+        signal = signal.to(device=self.device)
+        
         if len(self.gpu_ids) > 1:
             module = torch.nn.DataParallel(
                 self.net,
@@ -109,7 +148,7 @@ class Model(object):
             module = self.net
         module.eval()
         with torch.no_grad():
-            prediction = module(signal).cpu()
+            prediction = module(signal) #.cpu()
         return prediction
 
 def _weights_init(m):
