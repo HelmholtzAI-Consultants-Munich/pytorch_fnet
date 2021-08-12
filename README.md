@@ -1,3 +1,13 @@
+## What is this?
+This branch has been forked from release1, which was used as a basis to develop a workflow for the generation of cell infection. The workflow is described in the image below.
+
+# Step-to-step guide of infection workflow.
+ This workflow is aimed for use each time a new dataset is acquired. To predict cell infection a model has been trained with 85 brightfield images and achieved a Pearson Correlation Coefficient of 0.81 on 15 test images. The workflow requires the images of the new dataset to be in tiff format and include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if we are only going to predict infection from pre-trained model *--> need to check* ). The workflow is comprised of two main parts, testing and training:
+ 1. The new dataset is split into a train and test 
+ 2. Next, the pre-trained model is used to generate the infection channel for the images in the test set
+ 3. At this point the use input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here. The user can also use the model to produce infection images for the full dataset
+ 4. If the results are not satisfactory the second part of the workflow needs to be implemented. The training data is used to fine-tune an existing model while performing a hyperparameter search and cross-validation. Another model is also trained from scratch under the same conditions and the two best models from the search are compared. The best model may depend on how similar or not the new dataset is compared to the or
+
 # Label-free prediction of three-dimensional fluorescence images from transmitted light microscopy
 ![Combined outputs](doc/PredictingStructures-1.jpg?raw=true "Combined outputs")
 
