@@ -1,6 +1,8 @@
 ## What is this?
 This branch has been forked from [release1](https://github.com/AllenCellModeling/pytorch_fnet/tree/release_1) which was then developed into a workflow for the generation of cell infection. The workflow is described in the image below.
 
+![Infection generation workflow](doc/flow_app_final.png "Infection generation workflow")
+
 # Step-to-step guide of infection workflow.
  This workflow is aimed for use each time a new dataset is acquired. To predict cell infection a model has been trained with 85 brightfield images and achieved a Pearson Correlation Coefficient of 0.81 on 15 test images. The workflow requires the images of the new dataset to be in .tiff format and include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if we are only going to predict infection from pre-trained model *--> need to check* ). The workflow is comprised of two main parts, testing and training:
  1. The new dataset is split into a train and test 
