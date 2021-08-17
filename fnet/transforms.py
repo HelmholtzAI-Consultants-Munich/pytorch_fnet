@@ -115,7 +115,7 @@ class Padder(object):
         """Crops input so its dimensions matches dimensions of last input to __call__."""
         assert x_in.shape == self.last_pad['shape_out']
         slices = [slice(a, -b) if (a, b) != (0, 0) else slice(None) for a, b in self.last_pad['pad_width']]
-        return x_in[slices].copy()
+        return x_in[tuple(slices)].copy()
 
     def __call__(self, x_in):
         shape_in = x_in.shape

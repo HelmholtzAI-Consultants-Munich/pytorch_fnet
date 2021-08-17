@@ -24,24 +24,24 @@ if __name__ == '__main__':
     with open(temp_json_config, "w") as fp:
         json.dump(config, fp)
 
-    command_str = f"python train_exp.py {temp_json_config} --fine_tune"
+    command_str = f"python train_experiment.py {temp_json_config} --fine_tune --verbose"
     os.system(command_str)
     
-    command_str = f"python train_exp.py {temp_json_config}"
+    command_str = f"python train_experiment.py {temp_json_config} --verbose"
     os.system(command_str)
 
     output_path_finetune = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
     output_path_train_scratch = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
 
-    config['prediction']['return_score']
+    config['prediction']['return_score'] = True
     models = [output_path_finetune, output_path_train_scratch, config['path_model_dir']]
     config['path_model_dir'] = models
-    command_str = f"python predict.py {config}"
+    pretrained_results_path = os.path.join(config['output_path'], config['dataset'], 'pretrained')
+    config['path_run_dir'] = [output_path_finetune, output_path_train_scratch, pretrained_results_path ]
+    command_str = f"python predict.py {temp_json_config}"
     pearson_scores = os.system(command_str)
-    print('AAAAA', pearson_scores)
     id_max = pearson_scores.argmax()
     print("THE BEST MODEL IS: ", models[id_max])
     print("RESULTS FROM THIS MODEL CAN BE FOUND IN: ", ('/').join([models[id_max], 'results']))
     
     os.remove(temp_json_config)
-

@@ -7,7 +7,7 @@ import pandas as pd
 from train_model import Trainer
 
 def get_best_hyperparams(config, results_file, fine_tune=False):
-    df = pd.read_csv(results_file)
+    df = pd.read_csv(results_file, delimiter=',')
     best_hyperparams = dict()
 
     best_hyperparams['lr'] = df['learning rate'].mean()
@@ -15,6 +15,7 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
     best_hyperparams['dropout'] = df['dropout'].mean()
     best_hyperparams['resampling_probability'] = df['resampling probability'].mean()
     best_hyperparams['threshold_backround'] = df['resampling threshold'].mean()
+    
     if fine_tune:
         best_hyperparams['num_freeze_layers'] = round(df['freeze layers'].mean())
     else:
@@ -25,7 +26,7 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
         config[key] = best_hyperparams[key]
     return config
 
-def run_experiment(config, path_run_dir, results_file, fine_tune=False):
+def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=False):
 
     with open(results_file, 'w') as csv_file:
 
@@ -36,20 +37,21 @@ def run_experiment(config, path_run_dir, results_file, fine_tune=False):
         path_dataset_csv_paths = os.path.join(config['data_path'], 'csvs', config['dataset'])
 
         for fold_id in range(config['kfolds']):
-            print('Starting search on fold ', fold_id+1)
+            print('Starting search on fold {}/{}'.format(fold_id+1, config['kfolds']))
             path_dataset_train_csv = ('/').join([path_dataset_csv_paths,"train_{}.csv".format(fold_id+1)])
             path_dataset_val_csv = ('/').join([path_dataset_csv_paths, "val_{}.csv".format(fold_id+1)])
             trainer.set_train_val_sets(path_dataset_train_csv, path_dataset_val_csv)
 
-            for search_id in range(5):
-                print('Starting search {} of fold {}'.format(search_id+1,fold_id+1))
+            for search_id in range(config['searches_per_fold']):
+                print('Starting search {}/{} of fold {}/{}'.format(search_id+1,config['searches_per_fold'],fold_id+1, config['kfolds']))
                 study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner()) #minimize
                 study.optimize(trainer.train_for_search, n_trials=config['training']['num_trials'])
 
                 pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
                 complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
                 trial = study.best_trial
-                if opts.v:
+                best_params = study.best_params
+                if verbose:
                     print("Study statistics: ")
                     print("  Number of finished trials: ", len(study.trials))
                     print("  Number of pruned trials: ", len(pruned_trials))
@@ -60,12 +62,16 @@ def run_experiment(config, path_run_dir, results_file, fine_tune=False):
                     for key, value in trial.params.items():
                         print("    {}: {}".format(key, value))
             
-            if fine_tune:
-                writer.writerow([fold_id, search_id, trial.lr, None, None, trial.dropout, trial.resample, trial.threshold, trial.freeze_layers])
-            else:
-                writer.writerow([fold_id, search_id, trial.lr, trial.depth, trial.patch, trial.dropout, trial.resample, trial.threshold, None])
+                trainer.reset_trial_id()
+            
+                if fine_tune:
+                    writer.writerow([fold_id, search_id, best_params['loss_weight'],best_params['lr'], None, None, best_params['dropout'], best_params['resample'], best_params['threshold'], best_params['freeze_layers']])
+                else:
+                    writer.writerow([fold_id, search_id, best_params['loss_weight'], best_params['lr'], best_params['depth'], best_params['patch'], best_params['dropout'], best_params['resample'], best_params['threshold'], None])
 
     csv_file.close()
+    
+    print('Going to train a model with the average of the best hyperparameter')
 
     config = get_best_hyperparams(config, results_file, fine_tune) # from all best hyperparameters get average
     trainer.update_config(config)
@@ -78,7 +84,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('config',type=str, help='config dictionary')
     parser.add_argument('--fine_tune', action='store_true', help='set to true if you wish to finetune existing model')
-    parser.add_argument('-v', '--verbose', action='store_true', help='verbose')
+    parser.add_argument('--verbose', action='store_true', help='verbose')
     opts = parser.parse_args()
 
     with open(opts.config, "r") as fp:
@@ -88,10 +94,9 @@ if __name__ == '__main__':
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
     else:
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
-    
     if not os.path.exists(path_run_dir):
         os.makedirs(path_run_dir)
-
+        
     results_file = os.path.join(path_run_dir, 'hyperaparams.csv')
     # run experiment and save best model
-    run_experiment(config, path_run_dir, results_file, opts.fine_tune) 
+    run_experiment(config, path_run_dir, results_file, opts.fine_tune, opts.verbose) 

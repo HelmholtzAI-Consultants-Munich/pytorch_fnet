@@ -1,25 +1,20 @@
 import argparse
 import os
+import json
+import logging
+import sys
+import time
+import warnings
+
+import optuna
+import math
+import numpy as np
+import torch
 
 import fnet.data
 import fnet.fnet_model
 from fnet.functions import compute_dataset_min_max_ranges, pearsonr
 from fnet.transforms import Propper
-
-import json
-import logging
-import numpy as np
-
-import pdb
-import sys
-import time
-import torch
-import warnings
-
-import optuna
-import math
-import joblib
-from datetime import datetime
 
 class Trainer(object):
 
@@ -32,16 +27,14 @@ class Trainer(object):
         self.verbose = verbose
         self.config['gpu_ids'] = [self.config['gpu_ids']] if isinstance(self.config['gpu_ids'], int) else self.config['gpu_ids']
         self.device = torch.device('cuda', self.config['gpu_ids'][0]) if self.config['gpu_ids'][0] >= 0 else torch.device('cpu')
-        self.run_id = 0
-        #Setup logging
-        self.logger = self.setup_logger()
-    
+        self.setup_logger() #Setup logging
+        self.trial_id = 0
+        
+    def reset_trial_id(self):
+        self.trial_id = 0
+
     def set_run_dir(self, path_run_dir):
         self.path_run_dir = path_run_dir
-        '''
-        if not os.path.exists(self.path_run_dir):
-            os.makedirs(self.path_run_dir)
-        '''
 
     def set_train_val_sets(self, path_dataset_train_csv, path_dataset_val_csv):
         self.path_dataset_train_csv = path_dataset_train_csv
@@ -119,10 +112,8 @@ class Trainer(object):
         self.logger.addHandler(sh)
 
     def train_for_search(self, trial):
-
-        print('Starting run: ', self.run_id)
-        self.run_id += 1
-                
+        self.trial_id += 1
+        print('Starting trial {}/{}'.format(self.trial_id, self.config['training']['num_trials']))
         # define hyperparameters to tune
         if self.fine_tune:
             self.config['num_freeze_layers'] = trial.suggest_int('freeze_layers', 1,106) #97
@@ -150,7 +141,7 @@ class Trainer(object):
             saved_model_path = self.path_run_dir
         if os.path.exists(os.path.join(saved_model_path, 'model.p')):
             model = fnet.load_model_from_dir(saved_model_path, gpu_ids=self.config['gpu_ids'], in_channels=self.config['in_channels'], out_channels=self.config['out_channels'])
-            self.info('model loaded from: {:s}'.format(saved_model_path))
+            self.logger.info('model loaded from: {:s}'.format(saved_model_path))
             # freeze first layers
             c=0
             for param in model.net.parameters():
@@ -188,13 +179,12 @@ class Trainer(object):
             loss_train += loss_batch 
             pearson_train += pearson_batch
             
-            if ((i + 1) % self.config['interval_save'] == 0) or ((i + 1) == self.config['training']['n_iter']):
-                if self.verbose: print('For {}/{} iterations, average training loss: {:.3f} and average Pearson Correlation Coefficient: {:3f}'.format(i, n_remaining_iterations, loss_train/self.config['interval_save'], pearson_train/self.config['interval_save']))
+            if ((i + 1) % self.config['print_iter'] == 0) or ((i + 1) == self.config['training']['n_iter']):
+                if self.verbose: print('For {}/{} iterations, average training loss: {:.3f} and average Pearson Correlation Coefficient: {:3f}'.format(i, n_remaining_iterations, loss_train/self.config['print_iter'], pearson_train/self.config['print_iter']))
                 loss_train = 0 
                 pearson_train = 0
                 
                 if self.path_dataset_val_csv is not None:
-                    model.eval()
                     loss_val = 0
                     pearson = 0
                     pearson_idx =0

@@ -40,12 +40,10 @@ if __name__ == '__main__':
     command_str = f"python scripts/python/split_dataset.py {path_dataset_csv} {new_csvs_path} --train_size {config['train_size']} -v"
     os.system(command_str)
     
-    config['path_run_dir'] = os.path.join(config['output_path'], config['dataset'], 'results_pretrained')
+    config['path_run_dir'] = [os.path.join(config['output_path'], config['dataset'], 'pretrained')]
     temp_json_config = './temp.json'
     with open(temp_json_config, "w") as fp:
         json.dump(config, fp)
     command_str = f"python predict.py {temp_json_config}"
     os.system(command_str)
     os.remove(temp_json_config)
-
-

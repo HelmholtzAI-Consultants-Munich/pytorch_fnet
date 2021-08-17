@@ -1,35 +1,28 @@
 data_path: ./data
 output_path: ./outputs
 dataset: eg
-path_model_dir: ["./saved_models/pretrained_model"] #', nargs='+', default=["./saved_models/infection100_63"], help='path to model directory')
+path_model_dir: ["./saved_models/pretrained_model"]
 signal_channel: 3
 target_channel: 2
 dapi_channel: 0
 train_size: 0.8
-kfolds: 5
+kfolds: 2 #5
+searches_per_fold: 2 #5
 run: '00'
-
-#path_dataset: ./data/new_exp_eg
-#path_dataset_csv: ./data/new_exp_eg.csv
-#path_dataset_csv_paths: ./data/csvs/new_exp_eg
-#path_dataset_train_csv: ["./data/csvs/new_exp_eg/train.csv"]
-#path_dataset_test_csv: ["./data/csvs/new_exp_eg/test.csv"]
-#path_run_dir: './saved_models/new_exp_eg'
-#path_saved_model: './saved_models/pretrained_model'
 
 preprocessing:
   transform_signal: ['fnet.transforms.normalize', 'fnet.transforms.AdaptRange']
   transform_target: ['fnet.transforms.normalize', 'fnet.transforms.Clip()']
 
 training:
-  num_trials: 100
-  n_iter: 15050
+  num_trials: 2 #100
+  n_iter: 15005
   augmentations: True
   
 #hyperparameters:
 lr: 0.000444
 batch_size: 16
-buffer_size: 6
+buffer_size: 3
 buffer_switch_frequency: 285
 dropout: 0.191
 threshold_backround: 0.2
@@ -56,8 +49,15 @@ module_fnet_model: fnet_model
 prediction:
   no_signal: True #set to not save signal image
   no_target: True #set to not save target image
-  no_prediction: False
-  no_prediction_unpropped: True #', action='store_true', help='set to not save unpropped prediction image')
+  no_prediction: True # set to save predicted images in original image dimensions
+  no_prediction_unpropped: False #set to save images in model-required dimensions (cropped or padded)
   return_score: False
   n_images: -1 # put negative to take all in test csv file
   propper_kwargs: {}
+
+
+#path_dataset: ./data/new_exp_eg
+#path_dataset_csv: ./data/new_exp_eg.csv
+#path_dataset_csv_paths: ./data/csvs/new_exp_eg
+#path_dataset_train_csv: ["./data/csvs/new_exp_eg/train.csv"]
+#path_dataset_test_csv: ["./data/csvs/new_exp_eg/test.csv"]

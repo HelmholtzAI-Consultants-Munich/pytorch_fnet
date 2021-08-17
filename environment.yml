@@ -1,4 +1,4 @@
-name: fnet
+name: fnet2
 channels:
   - pytorch
   - conda-forge
@@ -6,6 +6,7 @@ channels:
 dependencies:
   - optuna=2.9.1
   - pip=21.0.1
+  - cuda91=1.0
   - pytorch=1.8.0
   - torchvision=0.9.0
   - jupyter=1.0.0
@@ -19,3 +20,4 @@ dependencies:
     - argschema
     - opencv-python==4.5.2.52
     - nd2reader==3.2.3
+

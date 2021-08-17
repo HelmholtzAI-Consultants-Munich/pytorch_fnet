@@ -66,6 +66,7 @@ def save_tiff_and_log(tag, ar, path_tiff_dir, entry, path_log_dir):
     if not os.path.exists(path_tiff_dir):
         os.makedirs(path_tiff_dir)
     path_tiff = os.path.join(path_tiff_dir, '{:s}.tiff'.format(tag))
+    print('saved:', path_tiff)
     tifffile.imsave(path_tiff, ar)
     entry['path_' + tag] = os.path.relpath(path_tiff, path_log_dir)
 
@@ -91,11 +92,6 @@ def main():
     with open(opts.config, "r") as fp:
         config = json.load(fp)
 
-    config['path_save_dir'] = os.path.join(config['path_run_dir'], 'results')
-    if os.path.exists(config['path_save_dir']):
-        print('Output path already exists.')
-        return
-
     if config['class_dataset'] == 'TiffDataset':
         if config['prediction']['propper_kwargs'] == '-':
             config['prediction']['propper_kwargs']['n_max_pixels'] = 6000000
@@ -109,7 +105,8 @@ def main():
     indices = len(dataset) if config['prediction']['n_images'] < 0 else min(config['prediction']['n_images'], len(dataset))
     if config['prediction']['return_score']:
         pearson = np.zeros(len(config['path_model_dir']))
-
+    
+    model_idx = 0
     for idx, sample in enumerate(dataset):
         if idx==indices:
             break
@@ -117,7 +114,14 @@ def main():
         #data = [torch.unsqueeze(d, 0) for d in patch]  # make batch of size 1
         signal = patch[0]
         target = patch[1] if (len(patch) > 1) else None
-        for model_idx, path_model_dir in enumerate(config['path_model_dir']):
+
+        for path_model_dir, path_run_dir in zip(config['path_model_dir'], config['path_run_dir']):
+
+            path_save_dir = os.path.join(path_run_dir, 'results')
+            if os.path.exists(path_save_dir):
+                print('Output path already exists.')
+                return
+
             if (path_model_dir is not None) and (model is None or len(config['path_model_dir']) > 1):
                 model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
                 print(model)
@@ -129,9 +133,10 @@ def main():
             if is_last:
                 predicted_patches.append(prediction)
                 entry = get_prediction_entry(ds, idx)
+                filename=entry['file'].split('/')[-1].split('.')[0]
                 prediction = ds.repatch(predicted_patches)
                 # save images
-                path_tiff_dir = os.path.join(config['path_save_dir'], '{:02d}'.format(idx))
+                path_tiff_dir = os.path.join(path_save_dir, filename)
                 signal, target = ds.get_current_image_target(idx)
 
                 if config['prediction']['return_score']:
@@ -142,27 +147,27 @@ def main():
                 signal = signal.numpy()[0, ]
     
                 if not config['prediction']['no_signal']:
-                    save_tiff_and_log('signal', signal, path_tiff_dir, entry, config['path_save_dir'])
+                    save_tiff_and_log('signal', signal, path_tiff_dir, entry, path_save_dir)
                 if not config['prediction']['no_target'] and target is not None:
-                    save_tiff_and_log('target', target.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                    save_tiff_and_log('target', target.astype(np.float32), path_tiff_dir, entry, path_save_dir)
                 
                 prediction = prediction.squeeze().numpy()#[0, ]
                 #prediction = np.argmax(prediction, axis=0)
                 if not config['prediction']['no_prediction'] and prediction is not None:
-                    save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                    save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.astype(np.float32), path_tiff_dir, entry, path_save_dir)
                 if not config['prediction']['no_prediction_unpropped']:
                     #ar_pred_unpropped = propper.undo_last(prediction.numpy()[0, ])
                     ar_pred_unpropped = propper.undo_last(prediction)
-                    save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped.astype(np.float32), path_tiff_dir, entry, config['path_save_dir'])
+                    save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped.astype(np.float32), path_tiff_dir, entry, path_save_dir)
                 
                 entries.append(entry)
                 predicted_patches = []
             else:
                 predicted_patches.append(prediction)
         
-    #with open(os.path.join(config['path_save_dir'], 'predict_options.json'), 'w') as fo:
-        #json.dump(config, fp)
-    pd.DataFrame(entries).to_csv(os.path.join(config['path_save_dir'], 'predictions.csv'), index=False)
+        #with open(os.path.join(path_save_dir, 'predict_options.json'), 'w') as fo:
+            #json.dump(config, fp)
+        pd.DataFrame(entries).to_csv(os.path.join(path_save_dir, 'predictions.csv'), index=False)
     
     if config['prediction']['return_score']:
         return pearson
