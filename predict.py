@@ -108,7 +108,7 @@ def main():
     
     indices = len(dataset) if config['prediction']['n_images'] < 0 else min(config['prediction']['n_images'], len(dataset))
     if config['prediction']['return_score']:
-        pearson = np.zeros(len(config['prediction']['path_model_dir']))
+        pearson = np.zeros(len(config['path_model_dir']))
 
     for idx, sample in enumerate(dataset):
         if idx==indices:
@@ -117,8 +117,8 @@ def main():
         #data = [torch.unsqueeze(d, 0) for d in patch]  # make batch of size 1
         signal = patch[0]
         target = patch[1] if (len(patch) > 1) else None
-        for model_idx, path_model_dir in enumerate(config['prediction']['path_model_dir']):
-            if (path_model_dir is not None) and (model is None or len(config['prediction']['path_model_dir']) > 1):
+        for model_idx, path_model_dir in enumerate(config['path_model_dir']):
+            if (path_model_dir is not None) and (model is None or len(config['path_model_dir']) > 1):
                 model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
                 print(model)
                 name_model = os.path.basename(path_model_dir)

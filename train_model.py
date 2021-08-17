@@ -38,8 +38,10 @@ class Trainer(object):
     
     def set_run_dir(self, path_run_dir):
         self.path_run_dir = path_run_dir
+        '''
         if not os.path.exists(self.path_run_dir):
             os.makedirs(self.path_run_dir)
+        '''
 
     def set_train_val_sets(self, path_dataset_train_csv, path_dataset_val_csv):
         self.path_dataset_train_csv = path_dataset_train_csv

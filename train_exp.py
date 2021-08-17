@@ -27,7 +27,7 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
 
 def run_experiment(config, path_run_dir, results_file, fine_tune=False):
 
-    with open(results_file, 'w', newline='') as csv_file:
+    with open(results_file, 'w') as csv_file:
 
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(['cv fold','search id', 'loss weight', 'learning rate', 'depth', 'patch size', 'dropout', 'resampling probability', 'resampling threshold', 'freeze layers'])
@@ -88,7 +88,10 @@ if __name__ == '__main__':
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
     else:
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
+    
+    if not os.path.exists(path_run_dir):
+        os.makedirs(path_run_dir)
 
-    results_file = os.path.join(path_run_dir, 'hyperaparams.cvs')
+    results_file = os.path.join(path_run_dir, 'hyperaparams.csv')
     # run experiment and save best model
     run_experiment(config, path_run_dir, results_file, opts.fine_tune) 
