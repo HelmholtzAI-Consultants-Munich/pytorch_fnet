@@ -15,15 +15,21 @@ The workflow is comprised of two main parts, testing and training:
  2. To predict cell infection a model has been trained with 85 brightfield images and achieved a Pearson Correlation Coefficient of 0.81 on 15 test images. This pre-trained model is used to generate the infection channel for the images in the test set
  3. At this point the user's input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here (the user can then also use the model to produce infection images for the full dataset)
  4. If the results are not satisfactory and the user is not happy the second part of the workflow needs to be implemented. Here, two training steps are performed:
+ 
  4.1. Fine-tune model: The training data is used to fine-tune the existing model
+ 
  4.2. Train from scratch: The training data is used to train a new model from scratch
  In both of these steps the following sub-workflow is implemented:
  
-  Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
-   Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
-   Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
-  Compute average of best hyperparameters
-  Train a model with average best hyperparameters
+ &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp; Compute average of best hyperparameters
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;Train a model with average best hyperparameters
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
