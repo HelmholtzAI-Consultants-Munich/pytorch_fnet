@@ -3,7 +3,7 @@ This branch has been forked from [release1](https://github.com/AllenCellModeling
 
 ![Infection generation workflow](doc/flow_app_final.png "Infection generation workflow")
 
-# Step-to-step guide of infection workflow.
+# Step-to-step guide of infection workflow
  This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
 
 * The images of the new dataset need to be in .tiff format and 
