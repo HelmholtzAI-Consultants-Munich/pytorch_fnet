@@ -16,9 +16,9 @@ The workflow is comprised of two main parts, testing and training:
  3. At this point the user's input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here (the user can then also use the model to produce infection images for the full dataset)
  4. If the results are not satisfactory and the user is not happy the second part of the workflow needs to be implemented. Here, two training steps are performed:
  
- 4.1. Fine-tune model: The training data is used to fine-tune the existing model
+ &nbsp;&nbsp;&nbsp;&nbsp; 4.1. Fine-tune model: The training data is used to fine-tune the existing model
  
- 4.2. Train from scratch: The training data is used to train a new model from scratch
+ &nbsp;&nbsp;&nbsp;&nbsp; 4.2. Train from scratch: The training data is used to train a new model from scratch
  In both of these steps the following sub-workflow is implemented:
  
  &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
