@@ -8,5 +8,5 @@ results/
 data/*/
 data/csvs/
 data/csvs/*/
-saved_models/
+
 tmp/
