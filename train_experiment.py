@@ -28,27 +28,37 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
 
 def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=False):
 
-    with open(results_file, 'w') as csv_file:
+    # remove later - only for testing
+    if not fine_tune:
+        config['n_iter'] = 10
+    
 
+    with open(results_file, 'w') as csv_file:
+       
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(['cv fold','search id', 'loss weight', 'learning rate', 'depth', 'patch size', 'dropout', 'resampling probability', 'resampling threshold', 'freeze layers'])
-
+        
+        #create trainer instance
         trainer = Trainer(config, path_run_dir=path_run_dir, fine_tune=fine_tune)
         path_dataset_csv_paths = os.path.join(config['data_path'], 'csvs', config['dataset'])
 
+
         for fold_id in range(config['kfolds']):
             print('Starting search on fold {}/{}'.format(fold_id+1, config['kfolds']))
+            # set train and validation dataset paths
             path_dataset_train_csv = ('/').join([path_dataset_csv_paths,"train_{}.csv".format(fold_id+1)])
             path_dataset_val_csv = ('/').join([path_dataset_csv_paths, "val_{}.csv".format(fold_id+1)])
             trainer.set_train_val_sets(path_dataset_train_csv, path_dataset_val_csv)
 
             for search_id in range(config['searches_per_fold']):
                 print('Starting search {}/{} of fold {}/{}'.format(search_id+1,config['searches_per_fold'],fold_id+1, config['kfolds']))
+                # create optuna study for hyperparameter search
                 study = optuna.create_study(direction="maximize", pruner=optuna.pruners.MedianPruner()) #minimize
+                # and train x config['training']['num_trials'] times to find best hyperparameter configuration
                 study.optimize(trainer.train_for_search, n_trials=config['training']['num_trials'])
 
-                pruned_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.PRUNED]
-                complete_trials = [t for t in study.trials if t.state == optuna.structs.TrialState.COMPLETE]
+                pruned_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.PRUNED]
+                complete_trials = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
                 trial = study.best_trial
                 best_params = study.best_params
                 if verbose:
@@ -63,7 +73,8 @@ def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=
                         print("    {}: {}".format(key, value))
             
                 trainer.reset_trial_id()
-            
+                
+                # write best hyperparameters to results file
                 if fine_tune:
                     writer.writerow([fold_id, search_id, best_params['loss_weight'],best_params['lr'], None, None, best_params['dropout'], best_params['resample'], best_params['threshold'], best_params['freeze_layers']])
                 else:
@@ -74,7 +85,9 @@ def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=
     print('Going to train a model with the average of the best hyperparameter')
 
     config = get_best_hyperparams(config, results_file, fine_tune) # from all best hyperparameters get average
-    trainer.update_config(config)
+    trainer.update_config(config) # and update the config file with those hyperparameters
+    
+    # update train-val dataset to use entire split for training - no validation
     path_dataset_train_csv = ('/').join([path_dataset_csv_paths,"train.csv"])
     trainer.set_train_val_sets(path_dataset_train_csv, None)
     trainer.train_best() #run one time with newly computed hyperparameters
@@ -86,17 +99,26 @@ if __name__ == '__main__':
     parser.add_argument('--fine_tune', action='store_true', help='set to true if you wish to finetune existing model')
     parser.add_argument('--verbose', action='store_true', help='verbose')
     opts = parser.parse_args()
-
+    
+    if opts.fine_tune:
+        print('Starting fine-tuning')
+    else:
+        print('Starting training from scratch')
+    
+    # load the config file
     with open(opts.config, "r") as fp:
         config = json.load(fp)
 
+    # set run path depending on if we are fine-tuning or not
     if opts.fine_tune:
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
     else:
         path_run_dir = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
     if not os.path.exists(path_run_dir):
         os.makedirs(path_run_dir)
-        
+    
+    # create a results file to save the hyperparameter search results from training
     results_file = os.path.join(path_run_dir, 'hyperaparams.csv')
     # run experiment and save best model
     run_experiment(config, path_run_dir, results_file, opts.fine_tune, opts.verbose) 
+

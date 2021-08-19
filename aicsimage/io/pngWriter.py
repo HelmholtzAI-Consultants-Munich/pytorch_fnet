@@ -1,4 +1,5 @@
-from scipy.misc import imsave
+#from scipy.misc import imsave
+from PIL import Image
 import numpy as np
 import os
 
@@ -53,7 +54,10 @@ class PngWriter:
         elif len(data.shape) != 2:
             raise ValueError("Data was not of dimensions CYX or YX")
 
-        imsave(self.file_path, data, format="png")
+        #imsave(self.file_path, data, format="png")
+        # use pillow instead of scipy due to library version errors
+        im = Image.fromarray(np.uint8(data)*255)
+        im.save(self.file_path, "PNG")
 
     def save_slice(self, data, z=0, c=0, t=0):
         """Exactly the same functionality as save() but allows the interface to be the same as OmeTifWriter

@@ -1,0 +1,7 @@
+argschema
+optuna==2.7.0
+scikit-learn==0.24.2
+opencv-python==4.5.2.52
+nd2reader==3.2.3
+tifffile==0.15
+pandas==1.3.2

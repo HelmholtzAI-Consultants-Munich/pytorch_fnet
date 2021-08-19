@@ -7,6 +7,7 @@ import pdb
 import numbers
 import random 
 import torchvision.transforms.functional as TF
+from torchvision.transforms import InterpolationMode
 from PIL import Image
 import cv2
 #from sklearn.preprocessing import OneHotEncoder
@@ -335,7 +336,7 @@ class RandomAffine(object):
     .. _filters: https://pillow.readthedocs.io/en/latest/handbook/concepts.html#filters
     """
 
-    def __init__(self, degrees, translate=None, scale=None, shear=None, resample=False, fillcolor=0):
+    def __init__(self, degrees, translate=None, scale=None, shear=None, resample=InterpolationMode.NEAREST, fillcolor=0):
         if isinstance(degrees, numbers.Number):
             if degrees < 0:
                 raise ValueError("If degrees is a single number, it must be positive.")
@@ -423,7 +424,7 @@ class RandomAffine(object):
         """
         ret = self.get_params(self.degrees, self.translate, self.scale, self.shear, img_list[0].size())
         for idx, image in enumerate(img_list):
-            affine_img = TF.affine(image, *ret, resample=self.resample, fillcolor=self.fillcolor)
+            affine_img = TF.affine(image, *ret, interpolation=self.resample, fill=self.fillcolor)
             img_list[idx] = affine_img
         return img_list
 

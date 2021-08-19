@@ -1,7 +1,7 @@
 data_path: ./data
 output_path: ./outputs
 dataset: eg
-path_model_dir: ["./saved_models/pretrained_model"]
+path_model_dir: ["./saved_models/pretrained_model"] #', nargs='+', default=["./saved_models/infection100_63"], help='path to model directory')
 signal_channel: 3
 target_channel: 2
 dapi_channel: 0
@@ -22,7 +22,7 @@ training:
 #hyperparameters:
 lr: 0.000444
 batch_size: 16
-buffer_size: 3
+buffer_size: 6
 buffer_switch_frequency: 285
 dropout: 0.191
 threshold_backround: 0.2
@@ -38,7 +38,7 @@ max_dif: 1
 class_dataset: 'TiffDataset'
 gpu_ids: -1
 seed: 1
-print_iter: 200
+print_iter: 10 #200
 nn_module: 'fnet_nn_2d'
 in_channels: 1
 out_channels: 1
@@ -49,11 +49,12 @@ module_fnet_model: fnet_model
 prediction:
   no_signal: True #set to not save signal image
   no_target: True #set to not save target image
-  no_prediction: True # set to save predicted images in original image dimensions
-  no_prediction_unpropped: False #set to save images in model-required dimensions (cropped or padded)
-  return_score: False
+  no_prediction: True
+  no_prediction_unpropped: False #help='set to not save unpropped prediction image')
+  return_score: True # set to true to save Pearson Correlation Coefficient scores for images
   n_images: -1 # put negative to take all in test csv file
   propper_kwargs: {}
+
 
 
 #path_dataset: ./data/new_exp_eg

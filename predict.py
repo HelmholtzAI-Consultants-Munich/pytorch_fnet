@@ -103,10 +103,11 @@ def main():
     predicted_patches = []
     
     indices = len(dataset) if config['prediction']['n_images'] < 0 else min(config['prediction']['n_images'], len(dataset))
-    if config['prediction']['return_score']:
-        pearson = np.zeros(len(config['path_model_dir']))
     
-    model_idx = 0
+    pearson=dict()
+    for key in config['path_run_dir']:
+        pearson[key] = dict()
+    
     for idx, sample in enumerate(dataset):
         if idx==indices:
             break
@@ -116,12 +117,13 @@ def main():
         target = patch[1] if (len(patch) > 1) else None
 
         for path_model_dir, path_run_dir in zip(config['path_model_dir'], config['path_run_dir']):
-
+            
             path_save_dir = os.path.join(path_run_dir, 'results')
-            if os.path.exists(path_save_dir):
-                print('Output path already exists.')
+            
+            if os.path.exists(os.path.join(path_save_dir, 'pearson.json')):
+                print('Output already exists.')
                 return
-
+            
             if (path_model_dir is not None) and (model is None or len(config['path_model_dir']) > 1):
                 model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
                 print(model)
@@ -137,22 +139,19 @@ def main():
                 prediction = ds.repatch(predicted_patches)
                 # save images
                 path_tiff_dir = os.path.join(path_save_dir, filename)
-                signal, target = ds.get_current_image_target(idx)
+                signal_img, target_img = ds.get_current_image_target(idx)
+                
+                pearson[path_run_dir][entry['file']] = pearsonr(prediction, target)
 
-                if config['prediction']['return_score']:
-                    pearson[model_idx] += pearsonr(prediction, target)
-
-                target = target.numpy()[0, ]
-                #target = np.argmax(target, axis=0)
-                signal = signal.numpy()[0, ]
+                target_img = target_img.numpy()[0, ]
+                signal_img = signal_img.numpy()[0, ]
     
                 if not config['prediction']['no_signal']:
-                    save_tiff_and_log('signal', signal, path_tiff_dir, entry, path_save_dir)
+                    save_tiff_and_log('signal', signal_img, path_tiff_dir, entry, path_save_dir)
                 if not config['prediction']['no_target'] and target is not None:
-                    save_tiff_and_log('target', target.astype(np.float32), path_tiff_dir, entry, path_save_dir)
+                    save_tiff_and_log('target', target_img.astype(np.float32), path_tiff_dir, entry, path_save_dir)
                 
                 prediction = prediction.squeeze().numpy()#[0, ]
-                #prediction = np.argmax(prediction, axis=0)
                 if not config['prediction']['no_prediction'] and prediction is not None:
                     save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.astype(np.float32), path_tiff_dir, entry, path_save_dir)
                 if not config['prediction']['no_prediction_unpropped']:
@@ -164,15 +163,13 @@ def main():
                 predicted_patches = []
             else:
                 predicted_patches.append(prediction)
-        
-        #with open(os.path.join(path_save_dir, 'predict_options.json'), 'w') as fo:
-            #json.dump(config, fp)
+
         pd.DataFrame(entries).to_csv(os.path.join(path_save_dir, 'predictions.csv'), index=False)
     
     if config['prediction']['return_score']:
-        return pearson
-    else:
-        return
+        for path_run_dir in config['path_run_dir']:
+            with open(os.path.join(path_run_dir, 'results', 'pearson.json'), 'w') as fo:
+                json.dump(pearson[path_run_dir], fo)
     
 
 if __name__ == '__main__':
