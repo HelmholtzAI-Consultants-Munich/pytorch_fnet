@@ -1,9 +1,11 @@
-# What is this?
-This branch has been forked from [release1](https://github.com/AllenCellModeling/pytorch_fnet/tree/release_1) which was then developed into a workflow for the generation of cell infection. The workflow is described in the image below.
+# Predicting infection from microscopy images of unlabelled cells
+
+## What is this?
+This branch has been forked from [release1](https://github.com/AllenCellModeling/pytorch_fnet/tree/release_1) which was then developed into a workflow for the generation of cell infection markers from brightfield microscopy images. The workflow is described in the image below.
 
 ![Infection generation workflow](doc/flow_app_final.png "Infection generation workflow")
 
-# Step-to-step guide of infection workflow
+## Step-to-step guide of infection workflow
  This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
 
 * The images of the new dataset need to be in .tiff format and 
@@ -33,11 +35,22 @@ The workflow is comprised of two main parts, testing and training:
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
-# How does this work?
 
-The user interacts with the workflow through the ```config.yaml``` file. Within are included a list of parameters necessary for training and testing on a new dataset. For example, 
+## Installation
+- Install [Miniconda](https://conda.io/miniconda.html) if necessary.
+- Open a shell, navigate to the directory in which this project is stored and execute the setup script: ```./setup.sh```. This will create a conda environment, install the necessary packages within and test the installation. The installation was successful if the script executes without errors.
 
-For steps 1-2 of the workflow described above, the user must update the ```config``` file with her new data path (```to-do```) and any other parameter she wishes and then run the following:
+## How does this work?
+
+Each time the user wishes to run the workflow, the environment previously installed will need to be activated. This can be done by opening a shell and typing:
+
+```
+conda activate fnet
+```
+
+The user can interact with the workflow through the ```config.yaml``` file. Within are included a list of parameters necessary for training and testing on a new dataset. For example, the batch size used during training of the network can be set to 32 by: ```batch_size: 32```.
+
+For steps 1-2 of the workflow described above, the user must update the ```config``` file with her new data path (```e.g. data_path: ./data/acquisition_190821```) and any other parameter she wishes and then run the following:
 
 ```
 python workflow_pt1.py
@@ -49,30 +62,13 @@ For steps 3-5 of the workflow described above, the user must run the following:
 python workflow_pt2.py
 ```
 
-# Label-free prediction of three-dimensional fluorescence images from transmitted light microscopy
-![Combined outputs](doc/PredictingStructures-1.jpg?raw=true "Combined outputs")
-
 ## System Requirements
 Installing on Linux is recommended (we have used Ubuntu 16.04).
 
 An nVIDIA graphics card with >10GB of ram (we have used an nVIDIA Titan X Pascal) with current drivers installed (we have used nVIDIA driver version 390.48).
 
-## Installation
-### Environment setup
-- Install [Miniconda](https://conda.io/miniconda.html) if necessary.
-- Create a Conda environment for the platform:
-```shell
-conda env create -f environment.yml
-```
-- Activate the environment:
-```shell
-conda activate fnet
-```
-- Try executing the test script:
-```shell
-./scripts/test_run.sh
-```
-The installation was successful if the script executes without errors.
+# Label-free prediction of three-dimensional fluorescence images from transmitted light microscopy
+![Combined outputs](doc/PredictingStructures-1.jpg?raw=true "Combined outputs")
 
 ## Citation
 If you find this code useful in your research, please consider citing our pre-publication manuscript:
