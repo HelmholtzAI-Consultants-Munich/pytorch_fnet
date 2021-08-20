@@ -7,7 +7,14 @@ This branch has been forked from [release1](https://github.com/AllenCellModeling
 
 ## Installation
 - Install [Miniconda](https://conda.io/miniconda.html) if necessary.
-- Open a shell, navigate to the directory in which this project is stored and execute the setup script: ```./setup.sh```. This will create a conda environment, install the necessary packages within and test the installation. The installation was successful if the script executes without errors.
+- Open a shell, navigate to the directory in which this project is stored and execute the following:
+   ```
+   conda create -n fnet python=3.7
+   conda activate fnet
+   pip install -r requirements.txt
+   conda install -c pytorch pytorch=1.8.0 torchvision=0.9.0 cuda91=1.0
+   ```
+   Type ```y``` in the terminal when prompted. This will create a conda environment and install the necessary packages to run the repo. If you do not have a GPU on your system (not advised for these kind of experiments) remove ```cuda91=1.0``` from the last line before executing it. You will also need to set ```config[gpu_ids]: -1``` (see config explanation below).
 
 ## How does this work?
 
