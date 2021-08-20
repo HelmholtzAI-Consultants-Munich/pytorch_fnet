@@ -42,7 +42,7 @@ An nVIDIA graphics card with >10GB of ram (we have used an nVIDIA Titan X Pascal
 
 * The images of the new dataset need to be in .tiff format and 
 
-* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if we are only going to predict infection from pre-trained model *--> need to check* ).
+* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if only the first part of the workflow is used to  predict infection from the pre-trained model).
 
 The workflow is comprised of two main parts, testing and training:
  1. The new dataset is split into train and test sets
