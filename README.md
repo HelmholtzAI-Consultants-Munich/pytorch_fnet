@@ -5,37 +5,6 @@ This branch has been forked from [release1](https://github.com/AllenCellModeling
 
 ![Infection generation workflow](doc/flow_app_final.png "Infection generation workflow")
 
-## Step-to-step guide of infection workflow
- This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
-
-* The images of the new dataset need to be in .tiff format and 
-
-* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if we are only going to predict infection from pre-trained model *--> need to check* ).
-
-The workflow is comprised of two main parts, testing and training:
- 1. The new dataset is split into train and test sets
- 2. To predict cell infection a model has been trained for 15000 iterations with 85 brightfield images and achieved a Pearson Correlation Coefficient of 0.81 on 15 test images. This pre-trained model is used to generate the infection channel for the images in the test set
- 3. At this point the user's input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here (the user can then also use the model to produce infection images for the full dataset)
- 4. If the results are not satisfactory and the user is not happy the second part of the workflow needs to be implemented. Here, two training steps are performed:
- 
- &nbsp;&nbsp;&nbsp;&nbsp; 4.1. Fine-tune model: The training data is used to fine-tune the existing model (for this configuration, since the model has already been trained for 15000 iteration ```config['training']['n_iter']``` needs to be set >15000, e.g. to train for an additional 1000 iteration the user must set ```config['training']['n_iter']: 16000``` in the ```config``` file)
- 
- &nbsp;&nbsp;&nbsp;&nbsp; 4.2. Train from scratch: The training data is used to train a new model from scratch
- In both of these steps the following sub-workflow is implemented:
- 
- &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
- 
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
- 
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
- 
- &nbsp;&nbsp;&nbsp;&nbsp; Compute average of best hyperparameters
- 
- &nbsp;&nbsp;&nbsp;&nbsp;Train a model with average best hyperparameters
-  
- 5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
-
-
 ## Installation
 - Install [Miniconda](https://conda.io/miniconda.html) if necessary.
 - Open a shell, navigate to the directory in which this project is stored and execute the setup script: ```./setup.sh```. This will create a conda environment, install the necessary packages within and test the installation. The installation was successful if the script executes without errors.
@@ -66,6 +35,38 @@ python workflow_pt2.py
 Installing on Linux is recommended (we have used Ubuntu 16.04).
 
 An nVIDIA graphics card with >10GB of ram (we have used an nVIDIA Titan X Pascal) with current drivers installed (we have used nVIDIA driver version 390.48).
+
+
+## Step-to-step guide of infection workflow
+ This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
+
+* The images of the new dataset need to be in .tiff format and 
+
+* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if we are only going to predict infection from pre-trained model *--> need to check* ).
+
+The workflow is comprised of two main parts, testing and training:
+ 1. The new dataset is split into train and test sets
+ 2. To predict cell infection a model has been trained for 15000 iterations with 85 brightfield images and achieved a Pearson Correlation Coefficient of 0.81 on 15 test images. This pre-trained model is used to generate the infection channel for the images in the test set
+ 3. At this point the user's input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here (the user can then also use the model to produce infection images for the full dataset)
+ 4. If the results are not satisfactory and the user is not happy the second part of the workflow needs to be implemented. Here, two training steps are performed:
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp; 4.1. Fine-tune model: The training data is used to fine-tune the existing model (for this configuration, since the model has already been trained for 15000 iterations, ```config['training']['n_iter']``` needs to be set >15000, e.g. to train for an additional 1000 iteration the user must set ```config['training']['n_iter']: 16000``` in the ```config``` file)
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp; 4.2. Train from scratch: The training data is used to train a new model from scratch
+ In both of these steps the following sub-workflow is implemented:
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp; Compute average of best hyperparameters
+ 
+ &nbsp;&nbsp;&nbsp;&nbsp;Train a model with average best hyperparameters
+  
+ 5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
+
 
 # Label-free prediction of three-dimensional fluorescence images from transmitted light microscopy
 ![Combined outputs](doc/PredictingStructures-1.jpg?raw=true "Combined outputs")
