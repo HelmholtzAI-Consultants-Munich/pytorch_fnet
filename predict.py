@@ -112,17 +112,14 @@ def main():
         if idx==indices:
             break
         patch, is_last = sample['patch'], sample['is_last']
-        #data = [torch.unsqueeze(d, 0) for d in patch]  # make batch of size 1
         signal = patch[0]
-        target = patch[1] if (len(patch) > 1) else None
+        target = patch[1] if (len(patch) > 2) else None
 
         for path_model_dir, path_run_dir in zip(config['path_model_dir'], config['path_run_dir']):
-            
             path_save_dir = os.path.join(path_run_dir, 'results')
             
             if os.path.exists(os.path.join(path_save_dir, 'pearson.json')):
-                print('Output already exists.')
-                return
+                continue
             
             if (path_model_dir is not None) and (model is None or len(config['path_model_dir']) > 1):
                 model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
@@ -141,9 +138,10 @@ def main():
                 path_tiff_dir = os.path.join(path_save_dir, filename)
                 signal_img, target_img = ds.get_current_image_target(idx)
                 
-                pearson[path_run_dir][entry['file']] = pearsonr(prediction, target)
-
-                target_img = target_img.numpy()[0, ]
+                if target is not None:
+                    pearson[path_run_dir][entry['file']] = pearsonr(prediction, target)
+                    target_img = target_img.numpy()[0, ]
+                    
                 signal_img = signal_img.numpy()[0, ]
     
                 if not config['prediction']['no_signal']:
@@ -165,12 +163,12 @@ def main():
                 predicted_patches.append(prediction)
 
         pd.DataFrame(entries).to_csv(os.path.join(path_save_dir, 'predictions.csv'), index=False)
-    
+
     if config['prediction']['return_score']:
         for path_run_dir in config['path_run_dir']:
-            with open(os.path.join(path_run_dir, 'results', 'pearson.json'), 'w') as fo:
-                json.dump(pearson[path_run_dir], fo)
-    
+            if not os.path.exists(os.path.join(path_run_dir, 'results', 'pearson.json')):
+                with open(os.path.join(path_run_dir, 'results', 'pearson.json'), 'w') as fo:
+                    json.dump(pearson[path_run_dir], fo)
 
 if __name__ == '__main__':
 

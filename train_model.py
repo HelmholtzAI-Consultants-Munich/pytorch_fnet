@@ -243,6 +243,7 @@ class Trainer(object):
         return pearson
 
     def train_best(self):
+        
         #Set random seed
         if self.config['seed'] is not None:
             np.random.seed(self.config['seed'])
@@ -253,7 +254,9 @@ class Trainer(object):
             saved_model_path = self.config['path_model_dir'][0]
         else:
             saved_model_path = self.path_run_dir
+            
         path_model = os.path.join(self.path_run_dir, 'model.p')
+        
         if os.path.exists(os.path.join(saved_model_path,'model.p')):
             model = fnet.load_model_from_dir(saved_model_path, gpu_ids=self.config['gpu_ids'], in_channels=self.config['in_channels'], out_channels=self.config['out_channels'])
             self.logger.info('model loaded from: {:s}'.format(saved_model_path))

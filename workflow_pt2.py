@@ -19,7 +19,7 @@ def get_best_model(run_paths_list):
             for param in pearson_model.values():
                 pearson_scores[idx] += param  
     id_max = np.argmax(pearson_scores)
-    return id_max
+    return id_max, pearson_scores[id_max]/len(pearson_model)
    
 parser = ArgumentParser()
 parser.add_argument('--config', type=str, default='config.yaml', help="training configuration")
@@ -44,6 +44,7 @@ if __name__ == '__main__':
     # run a training experiment while finetuning the existing model
     command_str = f"python train_experiment.py {temp_json_config} --fine_tune --verbose"
     os.system(command_str)
+
     # run a training experiment by training the model from scratch
     command_str = f"python train_experiment.py {temp_json_config} --verbose"
     os.system(command_str)
@@ -69,8 +70,8 @@ if __name__ == '__main__':
     os.system(command_str)
     
     # find the model with the best pearson correlation coefficient
-    id_max = get_best_model(config['path_run_dir'])
-    print("THE BEST MODEL IS: ", models[id_max])
+    id_max, pearson_score = get_best_model(config['path_run_dir'])
+    print("THE BEST MODEL IS: {} WITH A PEARSON CORRELATION COEFFICIENT OF: {}".format(models[id_max], pearson_score))
     print("RESULTS FROM THIS MODEL CAN BE FOUND IN: ", ('/').join([models[id_max], 'results']))
     
     os.remove(temp_json_config) # remove the temp file

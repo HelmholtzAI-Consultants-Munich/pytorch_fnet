@@ -1,33 +1,33 @@
-data_path: ./data
-output_path: ./outputs
-dataset: eg
-path_model_dir: ["./saved_models/pretrained_model"] #', nargs='+', default=["./saved_models/infection100_63"], help='path to model directory')
-signal_channel: 3
-target_channel: 2
-dapi_channel: 0
-train_size: 0.8
-kfolds: 2 #5
-searches_per_fold: 2 #5
-run: '00'
+data_path: ./data # path to the directory of your tiff images
+output_path: ./outputs # path where you want to save workflow outputs, i.e. trained models, predicted images etc.
+dataset: acquisition_190821 # the name of your dataset, should correspond to directory name within your data_path
+path_model_dir: ["./saved_models/pretrained_model"] # the path to the pre-trained model
+signal_channel: 3 # the channel id of the brightfield image
+target_channel: 2 # the channel id of the infection image - set to None if only going to use first part of workflow and you don't have a dataset with infection marker
+dapi_channel: 0 # the channel id of the DAPI image - set to None if only going to use first part of workflow and you don't have a dataset with DAPI marker
+train_size: 0.8 # defines train-test split
+kfolds: 5 # number of folds for cross validation
+searches_per_fold: 5 # number of times to repeat a hyperparameter search for a specific k-fold 
+run: '2008211533' # name of experiment
 
 preprocessing:
   transform_signal: ['fnet.transforms.normalize', 'fnet.transforms.AdaptRange']
-  transform_target: ['fnet.transforms.normalize', 'fnet.transforms.Clip()']
+  transform_target: ['fnet.transforms.normalize', 'fnet.transforms.Clip()'] # set to None if there is no target in dataset
 
 training:
-  num_trials: 2 #100
-  n_iter: 15005
+  num_trials: 2 # number of searches for best hyperparameter configuration
+  n_iter: 16000
   augmentations: True
   
 #hyperparameters:
-lr: 0.000444
+lr: 0.0004
 batch_size: 16
-buffer_size: 6
+buffer_size: 20 # needs to be at least as big as train set(probably quite smaller)
 buffer_switch_frequency: 285
-dropout: 0.191
+dropout: 0.19
 threshold_backround: 0.2
 resampling_probability: 0.669
-num_freeze_layers: 0 #106
+num_freeze_layers: 0 
 patch_size: [256,256]
 depth: 5
 loss_weight: 0.7
@@ -36,9 +36,9 @@ min_dif: 0.05
 max_dif: 1
 
 class_dataset: 'TiffDataset'
-gpu_ids: -1
+gpu_ids: 0 # set to -1 if you do not have a gpu - not recommended!
 seed: 1
-print_iter: 10 #200
+print_iter: 200
 nn_module: 'fnet_nn_2d'
 in_channels: 1
 out_channels: 1
@@ -50,15 +50,7 @@ prediction:
   no_signal: True #set to not save signal image
   no_target: True #set to not save target image
   no_prediction: True
-  no_prediction_unpropped: False #help='set to not save unpropped prediction image')
+  no_prediction_unpropped: False #set to not save unpropped prediction image
   return_score: True # set to true to save Pearson Correlation Coefficient scores for images
   n_images: -1 # put negative to take all in test csv file
   propper_kwargs: {}
-
-
-
-#path_dataset: ./data/new_exp_eg
-#path_dataset_csv: ./data/new_exp_eg.csv
-#path_dataset_csv_paths: ./data/csvs/new_exp_eg
-#path_dataset_train_csv: ["./data/csvs/new_exp_eg/train.csv"]
-#path_dataset_test_csv: ["./data/csvs/new_exp_eg/test.csv"]

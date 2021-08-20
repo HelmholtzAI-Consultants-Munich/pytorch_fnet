@@ -10,8 +10,17 @@ def get_config(config):
         return yaml.load(stream, yaml.SafeLoader)
 
 def make_dataset_csv(config):
-    file_dir = os.path.join(config['data_path'], config['dataset']) #config['path_dataset']
-    write_file = os.path.join(config['data_path'], 'csvs', ('.').join([config['dataset'],'csv'])) #config['path_dataset_csv']
+    
+    '''
+    This function creates a csv file with the path of the images in the dataset and the channel id of the brightfield, 
+    DAPI and infection channels. It saves the csv file in a folder named 'csvs' within your config['data_path'] directory.
+    '''
+    
+    file_dir = os.path.join(config['data_path'], config['dataset']) 
+    if not os.path.exists(os.path.join(config['data_path'], 'csvs')):
+        os.mkdir(os.path.join(config['data_path'], 'csvs'))
+        
+    write_file = os.path.join(config['data_path'], 'csvs', ('.').join([config['dataset'],'csv'])) 
     channel_id, target_id, dapi_id, data_id = config['signal_channel'], config['target_channel'], config['dapi_channel'], config['dataset']
 
     with open(write_file, 'w', newline='') as csv_file:

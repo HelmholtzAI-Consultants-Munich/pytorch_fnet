@@ -81,8 +81,10 @@ class AllPatchesDataset(FnetDataset):
         if image_index >= len(self.buffer):
             image_index = image_index%len(self.buffer)
         datum = self.buffer[image_index]
-
-        return datum[0], datum[1]
+        if len(datum)>2:
+            return datum[0], datum[1]
+        else:
+            return datum[0], None
     
     
     def repatch(self, pred_list):

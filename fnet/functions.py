@@ -71,6 +71,7 @@ def load_model_from_dir(path_model_dir, gpu_ids=0, in_channels=1, out_channels=1
     return model
 
 def compute_dataset_min_max_ranges(train_path, val_path=None, norm=False):
+    
     df_train = pd.read_csv(train_path)
     if val_path is not None:
         df_val = pd.read_csv(val_path)
@@ -85,28 +86,44 @@ def compute_dataset_min_max_ranges(train_path, val_path=None, norm=False):
     min_dapi = []
     max_dapi = []
     
+    if df.iloc[0,:]['target_channel'] is None:
+        no_target = True
+    else:
+        no_target = False
+        
+    if df.iloc[0,:]['dapi_channel'] is None:
+        no_dapi = True
+    else:
+        no_dapi = False
+        
     for index in range(len(df)):
         element=df.iloc[index, :]
         image = tifffile.imread(element['file'])
         
-        image_infection = image[element['target_channel'],:,:]
+        if not no_target:
+            image_infection = image[element['target_channel'],:,:]
+            min_inf.append(np.min(image_infection))
+            max_inf.append(np.max(image_infection))
+        
+        if not no_dapi:
+            image_dapi = image[element['dapi_channel'],:,:]
+            min_dapi.append(np.min(image_dapi))
+            max_dapi.append(np.max(image_dapi))
+            
         image_bright = image[element['signal_channel'],:,:] 
-        image_dapi = image[element['dapi_channel'],:,:]
         if norm:
             image_bright = normalize(image_bright)
-        min_inf.append(np.min(image_infection))
-        max_inf.append(np.max(image_infection))
         min_bright.append(np.min(image_bright))
         max_bright.append(np.max(image_bright))
-        min_dapi.append(np.min(image_dapi))
-        max_dapi.append(np.max(image_dapi))
     
+    min_inf = np.min(np.array(min_inf)) if not no_target else None
+    max_inf = np.max(np.array(max_inf)) if not no_target else None
+
+    min_dapi = np.min(np.array(min_dapi)) if not no_dapi else None
+    max_dapi = np.max(np.array(max_dapi)) if not no_dapi else None
     
-    min_inf = np.min(np.array(min_inf))
-    max_inf = np.max(np.array(max_inf))
     min_bright = np.min(np.array(min_bright))
     max_bright = np.max(np.array(max_bright))
-    min_dapi = np.min(np.array(min_dapi))
-    max_dapi = np.max(np.array(max_dapi))
+
         
     return [min_bright, max_bright], [min_inf, max_inf], [min_dapi, max_dapi]        

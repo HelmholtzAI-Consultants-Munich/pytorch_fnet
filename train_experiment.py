@@ -7,6 +7,7 @@ import pandas as pd
 from train_model import Trainer
 
 def get_best_hyperparams(config, results_file, fine_tune=False):
+    
     df = pd.read_csv(results_file, delimiter=',')
     best_hyperparams = dict()
 
@@ -20,18 +21,14 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
         best_hyperparams['num_freeze_layers'] = round(df['freeze layers'].mean())
     else:
         best_hyperparams['depth'] = round(df['depth'].mean())
-        best_hyperparams['patch_size'] = df['patch size'].mode()
+        best_hyperparams['patch_size'] = [int(df['patch size'].mode().values[0]), int(df['patch size'].mode().values[0])]
     
     for key in best_hyperparams.keys():
         config[key] = best_hyperparams[key]
+
     return config
 
 def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=False):
-
-    # remove later - only for testing
-    if not fine_tune:
-        config['n_iter'] = 10
-    
 
     with open(results_file, 'w') as csv_file:
        
@@ -41,7 +38,6 @@ def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=
         #create trainer instance
         trainer = Trainer(config, path_run_dir=path_run_dir, fine_tune=fine_tune)
         path_dataset_csv_paths = os.path.join(config['data_path'], 'csvs', config['dataset'])
-
 
         for fold_id in range(config['kfolds']):
             print('Starting search on fold {}/{}'.format(fold_id+1, config['kfolds']))
