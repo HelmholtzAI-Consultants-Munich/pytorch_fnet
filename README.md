@@ -75,16 +75,31 @@ The workflow is comprised of two main parts, testing and training:
 ## Workflow outputs
 
 The output path of the workflow can be specified in the ```config``` file be setting the ```output_path```. This will have the following structure:
+├ └
 ```
---output_path: (e.g. ./outputs)
-   --dataset (e.g. acquisition_190821)
-      --pretrained
-         --results
-      --run (e.g. 2008211533)
-         --fine_tuned
-            --results
-         --train_from_scratch
-            --results
+|output_path: (e.g. ./outputs)
+|  ├─ dataset (e.g. acquisition_190821)
+|      ├─ pretrained
+|         └─ results
+|              └── ImgA_prediction.tif
+|              └── ImgB_prediction.tif
+|              └── pearson.json
+|              └── predictions.csv
+|      ├─ run (e.g. 2008211533)
+|         ├─ fine_tuned
+|            └── hyperaparams.csv  
+|            └── train_options.json
+|            └── ...
+|            └── results
+|                 └── ImgA_prediction.tif
+|                 └── ...
+|         ├─ train_from_scratch
+|            └── loss.csv   
+|            └── model.p
+|            └── ...
+|            └── results
+|                 └── ImgA_prediction.tif
+|                 └── ...
 ```
 
 Under ```./outputs/acquisition_190821/pretrained/results``` the predicted images from the test set using the pretrained model will be stored, along with a file holding the Pearson Correlation Coefficient of each image, if the ground truth is available, and a file with the test data information. The same will be stored under ```./outputs/acquisition_190821/2008211533/fine_tuned/results``` and ```./outputs/acquisition_190821/2008211533/train_from_scratch/results``` for the fine-tuned and newly trained model alike. The direcotried ```./outputs/acquisition_190821/2008211533/fine_tuned```  and ```./outputs/acquisition_190821/2008211533/train_from_scratch``` will also hold various files relevant for training, such as training losses, a list of the best hyperparameters for each run, etc.
