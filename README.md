@@ -66,9 +66,9 @@ The workflow is comprised of two main parts, testing and training:
  
          * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
  
-    - Compute average of best hyperparameters
+    - Compute average of best hyperparameters (for folds and repeated runs)
  
-    - Train a model with average best hyperparameters
+    - Train a model with average best hyperparameters (without using a validation set)
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
