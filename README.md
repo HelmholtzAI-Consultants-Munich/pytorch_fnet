@@ -31,24 +31,24 @@ conda activate fnet
 
 The user can interact with the workflow through the ```config.yaml``` file. Within are included a list of parameters necessary for training and testing on a new dataset. For example, the batch size used during training of the network can be set to 32 by: ```batch_size: 32```.
 
-For steps 1-2 of the workflow described above, the user must update the ```config``` file with her new data path (```e.g. data_path: ./data/acquisition_190821```) and any other parameter she wishes and then run the following:
+For steps 1-2 of the workflow, the user must update the ```config``` file with her new data path (e.g. if the new dataset can be found under ```./data/acquisition_190821``` then  ```data_path: ./data``` and ```dataset: acquisition_190821``` need to be set) and any other parameter she wishes and then run the following:
 
 ```
 python workflow_pt1.py
 ```
 
-For steps 3-5 of the workflow described above, the user must run the following:
+For steps 3-5 of the workflow, the user must run the following:
 
 ```
 python workflow_pt2.py
 ```
 
 ## Step-to-step guide of infection workflow
- This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
+ This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following **requirements** must be met: 
 
 * The images of the new dataset need to be in .tiff format and 
 
-* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if only the first part of the workflow is used to  predict infection from the pre-trained model).
+* Each image must include at least three channels: the brightfield image, the DAPI and Cy3 images. (only brightfield channel needed if only the first part of the workflow is used to  predict infection from the pre-trained model). These channels are specified in the ```config``` by specifying the channel ID in ```signal_channel```, ```target_channel``` and ```dapi_channel``` (signal and target correspond to brightfield and Cy3, i.e. infection channel respectively).
 
 The workflow is comprised of two main parts, testing and training:
  1. The new dataset is split into train and test sets
@@ -72,6 +72,22 @@ The workflow is comprised of two main parts, testing and training:
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
+## Workflow outputs
+
+The output path of the workflow can be specified in the ```config``` file be setting the ```output_path```. This will have the following structure:
+```
+--output_path: (e.g. ./outputs)
+   --dataset (e.g. acquisition_190821)
+      --pretrained
+         --results
+      --run (e.g. 2008211533)
+         --fine_tuned
+            --results
+         --train_from_scratch
+            --results
+```
+
+Under ```./outputs/acquisition_190821/pretrained/results``` the predicted images from the test set using the pretrained model will be stored, along with a file holding the Pearson Correlation Coefficient of each image, if the ground truth is available, and a file with the test data information. The same will be stored under ```./outputs/acquisition_190821/2008211533/fine_tuned/results``` and ```./outputs/acquisition_190821/2008211533/train_from_scratch/results``` for the fine-tuned and newly trained model alike. The direcotried ```./outputs/acquisition_190821/2008211533/fine_tuned```  and ```./outputs/acquisition_190821/2008211533/train_from_scratch``` will also hold various files relevant for training, such as training losses, a list of the best hyperparameters for each run, etc.
 
 # Label-free prediction of three-dimensional fluorescence images from transmitted light microscopy
 ![Combined outputs](doc/PredictingStructures-1.jpg?raw=true "Combined outputs")
