@@ -58,14 +58,13 @@ The workflow is comprised of two main parts, testing and training:
  
     4.1. Fine-tune model: The training data is used to fine-tune the existing model (for this configuration, since the model has already been trained for 15000 iterations, ```config['training']['n_iter']``` needs to be set >15000, e.g. to train for an additional 1000 iteration the user must set ```config['training']['n_iter']: 16000``` in the ```config``` file)
  
-    4.2. Train from scratch: The training data is used to train a new model from scratch
- In both of these steps the following sub-workflow is implemented:
+    4.2. Train from scratch: The training data is used to train a new model from scratch. In both of these steps the following sub-workflow is implemented:
  
      - Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
  
-     * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
+         * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
  
-     * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
+         * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
  
     - Compute average of best hyperparameters
  
