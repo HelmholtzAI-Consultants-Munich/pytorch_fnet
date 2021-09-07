@@ -33,11 +33,12 @@ def make_dataset_csv(config):
                     filename = os.path.join(dirpath, file)
                     writer.writerow([filename, channel_id, target_id, dapi_id, data_id])
     csv_file.close()
-
-parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='config.yaml', help="training configuration")
     
 if __name__ == '__main__':
+
+    parser = ArgumentParser()
+    parser.add_argument('--config', type=str, default='config.yaml', help="training configuration")
+
     args = parser.parse_args()
     config = get_config(args.config) # get the config.yaml file as a dictionary
     

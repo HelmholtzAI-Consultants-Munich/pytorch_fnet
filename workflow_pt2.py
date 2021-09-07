@@ -8,7 +8,6 @@ import numpy as np
 def get_config(config):
     with open(config, 'r') as stream:
         return yaml.load(stream, yaml.SafeLoader)
-
     
 def get_best_model(run_paths_list):
     # get average pearson for each model
@@ -21,10 +20,10 @@ def get_best_model(run_paths_list):
     id_max = np.argmax(pearson_scores)
     return id_max, pearson_scores[id_max]/len(pearson_model)
    
-parser = ArgumentParser()
-parser.add_argument('--config', type=str, default='config.yaml', help="training configuration")
-
 if __name__ == '__main__':
+
+    parser = ArgumentParser()
+    parser.add_argument('--config', type=str, default='config.yaml', help="training configuration")
     
     args = parser.parse_args()
     config = get_config(args.config) # get the config.yaml file as a dictionary

@@ -46,8 +46,9 @@ def main():
             path_train_csv = os.path.join(path_store_split, 'train_{}.csv'.format(i+1))
             path_test_csv = os.path.join(path_store_split, 'val_{}.csv'.format(i+1))
             if os.path.exists(path_train_csv) and os.path.exists(path_test_csv):
-                vprint('Using existing train/val split.')
-                return
+                os.remove(path_train_csv)
+                os.remove(path_test_csv)
+                vprint('Removing existing train/test splits.')
             if i==0:
                 idx_start=0
             idx_end=idx_start+split_samples
@@ -64,8 +65,9 @@ def main():
         path_train_csv = os.path.join(path_store_split, 'train.csv')
         path_test_csv = os.path.join(path_store_split, 'test.csv')
         if os.path.exists(path_train_csv) and os.path.exists(path_test_csv):
-            vprint('Using existing train/test split.')
-            return
+            os.remove(path_train_csv)
+            os.remove(path_test_csv)
+            vprint('Removing existing train/test splits.')
         if opts.train_size == 0:
             df_test = df_all
             df_train = df_all[0:0]  # empty DataFrame but with columns intact

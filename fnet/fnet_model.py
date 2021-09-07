@@ -118,6 +118,7 @@ class Model(object):
             )
         else:
             module = self.net
+            
         self.optimizer.zero_grad()
         output = module(signal)
         loss = self.criterion(output, target)
