@@ -78,8 +78,8 @@ def main():
                 idx_split = round(len(df_all)*opts.train_size)
             else:
                 raise AttributeError
-        df_train = df_all[:idx_split]
-        df_test = df_all[idx_split:]
+            df_train = df_all[:idx_split]
+            df_test = df_all[idx_split:]
         vprint('train/test sizes: {:d}/{:d}'.format(len(df_train), len(df_test)))
         if not os.path.exists(path_store_split):
             os.makedirs(path_store_split)

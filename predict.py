@@ -119,7 +119,7 @@ def main():
             path_save_dir = os.path.join(path_run_dir, 'results')
             
             if os.path.exists(os.path.join(path_save_dir, 'pearson.json')):
-                continue
+                os.remove(os.path.join(path_save_dir, 'pearson.json')) #rerun experiment
             
             if (path_model_dir is not None) and (model is None or len(config['path_model_dir']) > 1):
                 model = fnet.load_model(path_model_dir, config['gpu_ids'], module=config['module_fnet_model'], in_channels=config['in_channels'], out_channels=config['out_channels'])
