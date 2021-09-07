@@ -61,15 +61,15 @@ The workflow is comprised of two main parts, testing and training:
     4.2. Train from scratch: The training data is used to train a new model from scratch
  In both of these steps the following sub-workflow is implemented:
  
-         * Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
+     - Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
  
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
+     * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
  
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
+     * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
  
- &nbsp;&nbsp;&nbsp;&nbsp; * Compute average of best hyperparameters
+    - Compute average of best hyperparameters
  
- &nbsp;&nbsp;&nbsp;&nbsp;* Train a model with average best hyperparameters
+    - Train a model with average best hyperparameters
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
