@@ -5,6 +5,11 @@ This branch has been forked from [release1](https://github.com/AllenCellModeling
 
 ![Infection generation workflow](doc/flow_app_final.png "Infection generation workflow")
 
+## System Requirements
+Installing on Linux is recommended (we have used Ubuntu 16.04).
+
+An nVIDIA graphics card with >10GB of ram (we have used an nVIDIA Titan X Pascal) with current drivers installed (we have used nVIDIA driver version 390.48).
+
 ## Installation
 - Install [Miniconda](https://conda.io/miniconda.html) if necessary.
 - Open a shell, navigate to the directory in which this project is stored and execute the following:
@@ -38,12 +43,6 @@ For steps 3-5 of the workflow described above, the user must run the following:
 python workflow_pt2.py
 ```
 
-## System Requirements
-Installing on Linux is recommended (we have used Ubuntu 16.04).
-
-An nVIDIA graphics card with >10GB of ram (we have used an nVIDIA Titan X Pascal) with current drivers installed (we have used nVIDIA driver version 390.48).
-
-
 ## Step-to-step guide of infection workflow
  This workflow is aimed for use each time a new dataset is acquired. During acquisition of the new dataset the following requirements must be met: 
 
@@ -62,15 +61,15 @@ The workflow is comprised of two main parts, testing and training:
  &nbsp;&nbsp;&nbsp;&nbsp; 4.2. Train from scratch: The training data is used to train a new model from scratch
  In both of these steps the following sub-workflow is implemented:
  
- &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
+ &nbsp;&nbsp;&nbsp;&nbsp; * Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
  
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
  
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * Repeat hyperparameter search (default: 5 times, can be changed in ```config```)
  
- &nbsp;&nbsp;&nbsp;&nbsp; Compute average of best hyperparameters
+ &nbsp;&nbsp;&nbsp;&nbsp; * Compute average of best hyperparameters
  
- &nbsp;&nbsp;&nbsp;&nbsp;Train a model with average best hyperparameters
+ &nbsp;&nbsp;&nbsp;&nbsp;* Train a model with average best hyperparameters
   
  5. The two models from the previous step, as well as the pre-trained model are compared with respect to the Pearson Correlation Coefficient on the test set. The outputs of the best model are stored.
 
