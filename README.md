@@ -56,12 +56,12 @@ The workflow is comprised of two main parts, testing and training:
  3. At this point the user's input is required to visualize results and evaluate if the pre-trained model results are satisfactory. If so, the workflow ends here (the user can then also use the model to produce infection images for the full dataset)
  4. If the results are not satisfactory and the user is not happy the second part of the workflow needs to be implemented. Here, two training steps are performed:
  
- &nbsp;&nbsp;&nbsp;&nbsp; 4.1. Fine-tune model: The training data is used to fine-tune the existing model (for this configuration, since the model has already been trained for 15000 iterations, ```config['training']['n_iter']``` needs to be set >15000, e.g. to train for an additional 1000 iteration the user must set ```config['training']['n_iter']: 16000``` in the ```config``` file)
+    4.1. Fine-tune model: The training data is used to fine-tune the existing model (for this configuration, since the model has already been trained for 15000 iterations, ```config['training']['n_iter']``` needs to be set >15000, e.g. to train for an additional 1000 iteration the user must set ```config['training']['n_iter']: 16000``` in the ```config``` file)
  
- &nbsp;&nbsp;&nbsp;&nbsp; 4.2. Train from scratch: The training data is used to train a new model from scratch
+    4.2. Train from scratch: The training data is used to train a new model from scratch
  In both of these steps the following sub-workflow is implemented:
  
- * &nbsp;&nbsp;&nbsp;&nbsp; Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
+         * Apply k-fold cross validation on data (default: 5, can be changed in ```config```). For each fold:
  
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; * Do hyperparameter search to find the best training configurations which maximize the Pearson Correlation Coefficient (default: 100 iterations, can be changed in ```config```)
  
