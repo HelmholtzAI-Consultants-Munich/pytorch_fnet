@@ -22,32 +22,106 @@ import joblib
 from datetime import datetime
 
 class Trainer(object):
+ """This class holds all training related functions and parameters
 
+    Parameters
+    ----------
+    config : dict
+        The config dictionary ususally loaded from config.yaml holding all training 
+        and data related parameters
+    fine_tune : bool
+        Whether we will be fine-tuning an existing model or training a model from scratch
+    path_run_dir: str
+        The path where training outputs will be stored, either 
+        output_path/dataset/run/fine_tuned or output_path/dataset/run/train_from_scratch
+    path_dataset_train_csv : str
+        The path to the csv file listing the images used for the training set
+    path_dataset_val_csv: str
+        The path to the csv file listing the images used for the validation set
+    verbose : bool
+        Whether or not to print training updates
+
+    Attributes
+    ----------
+    config : dict
+        The config dictionary ususally loaded from config.yaml holding all training 
+        and data related parameters
+    fine_tune : bool
+        Whether we will be fine-tuning an existing model or training a model from scratch
+    path_run_dir: str
+        The path where training outputs will be stored, either 
+        output_path/dataset/run/fine_tuned or output_path/dataset/run/train_from_scratch
+    path_dataset_train_csv : str
+        The path to the csv file listing the images used for the training set
+    path_dataset_val_csv: str
+        The path to the csv file listing the images used for the validation set
+    verbose : bool
+        Whether or not to print training updates
+    devic: str
+        The current device we are running on, either cpu or gpu0, etc.
+    trial_id: int
+        The current run of the hyperparameter search
+    """
     def __init__(self, config, fine_tune=False, path_run_dir=None, path_dataset_train_csv=None, path_dataset_val_csv=None, verbose=False):
         self.config = config
+        self.fine_tune = fine_tune
         self.path_run_dir = path_run_dir
         self.path_dataset_train_csv = path_dataset_train_csv
         self.path_dataset_val_csv = path_dataset_val_csv
-        self.fine_tune = fine_tune
         self.verbose = verbose
         self.config['gpu_ids'] = [self.config['gpu_ids']] if isinstance(self.config['gpu_ids'], int) else self.config['gpu_ids']
         self.device = torch.device('cuda', self.config['gpu_ids'][0]) if self.config['gpu_ids'][0] >= 0 else torch.device('cpu')
+        self.trial_id = 0
         #Setup logging
         self.setup_logger()
-        self.trial_id = 0
         
     def reset_trial_id(self):
+        '''
+        This function resets the trial id to zero - used every time a hyperparameter
+        search is completed
+        '''
         self.trial_id = 0
     
     def set_run_dir(self, path_run_dir):
+        '''
+        This function sets a new path_run_dir
+
+        Parameters
+        ----------
+        path_run_dir : str
+            The new run directory
+        '''
         self.path_run_dir = path_run_dir
 
     def set_train_val_sets(self, path_dataset_train_csv, path_dataset_val_csv):
+        '''
+        This function sets new csv files for the training and validation set
+
+        Parameters
+        ----------
+        path_dataset_train_csv : str
+            The path to the newcsv file listing the images used for the training set
+        path_dataset_val_csv: str
+            The path to the newcsv file listing the images used for the validation set
+        '''
         self.path_dataset_train_csv = path_dataset_train_csv
         self.path_dataset_val_csv = path_dataset_val_csv
 
     def get_dataloader(self, remaining_iterations, validation=False):
-        
+        '''
+        This function returns the dataloader used during training
+        Parameters
+        ----------
+        remaining_iterations : int
+            The number of iterations remaining for training - if training from scratch will
+            be equal to self.config['training']['n_iter']
+        validation: bool
+            Whether to return the training or validation dataloader
+        Returns
+        -------
+        torch.utils.data.DataLoader
+            The dataloader - either for training or validation
+        '''
         min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(self.path_dataset_train_csv, self.path_dataset_val_csv)
         min_max_bright_norm, _, _ = compute_dataset_min_max_ranges(self.path_dataset_train_csv, self.path_dataset_val_csv, norm=True)
 
@@ -109,9 +183,23 @@ class Trainer(object):
         return dataloader
 
     def update_config(self, config):
+        '''
+        This function will update the config dictionary
+
+        This function will usually be called before train_best to update the config with
+        the best hyperparameters found during train_for_search and train a model with these
+
+        Parameters
+        ----------
+        config : dict
+            The new config dictionary used for training 
+        '''
         self.config = config
 
     def setup_logger(self):
+        '''
+        This function sets up a run log
+        '''
         self.logger = logging.getLogger('model training')
         self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler(os.path.join(self.path_run_dir, 'run.log'), mode='a')
@@ -121,6 +209,23 @@ class Trainer(object):
         self.logger.addHandler(sh)
 
     def train_for_search(self, trial):
+        '''
+        This function perfrorms a single trial of the hyperparameter search
+
+        The function will select hyperparameters for the trial, train a model,
+        stop the training if performance is low and return the best pearson
+        correlation coefficient on the validation set
+
+        Parameters
+        ----------
+        trial : optuna.trial
+            The current trial of the hyperparameter search
+        Returns
+        -------
+        float
+            The best pearson correlation coefficient achieved on the validation set during 
+            training - the value we are trying to maximize during our hyperparameter search
+        '''
         self.trial_id += 1
         print('Starting trial {}/{}'.format(self.trial_id, self.config['training']['num_trials']))
         # define hyperparameters to tune
@@ -246,7 +351,11 @@ class Trainer(object):
         return pearson
 
     def train_best(self):
-        
+        '''
+        This function will train and save a model
+
+        The model will be trained based on the parameters specified in self.config
+        '''
         #Set random seed
         if self.config['seed'] is not None:
             np.random.seed(self.config['seed'])

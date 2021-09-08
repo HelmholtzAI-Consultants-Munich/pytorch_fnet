@@ -4,16 +4,32 @@ import yaml
 import csv
 import json
 
-# get config
+
 def get_config(config):
+    '''
+    Reads the config file and loads into a dict
+
+    Parameters
+    ----------
+    config : str
+        The config file - usually config.yaml
+    Returns
+    -------
+    dict
+        The loaded config file
+    '''
     with open(config, 'r') as stream:
         return yaml.load(stream, yaml.SafeLoader)
 
 def make_dataset_csv(config):
-    
     '''
     This function creates a csv file with the path of the images in the dataset and the channel id of the brightfield, 
     DAPI and infection channels. It saves the csv file in a folder named 'csvs' within your config['data_path'] directory.
+    
+    Parameters
+    ----------
+    config : dict
+        The config file - usually config.yaml
     '''
     
     file_dir = os.path.join(config['data_path'], config['dataset']) 

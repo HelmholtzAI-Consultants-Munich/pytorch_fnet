@@ -7,6 +7,30 @@ import pandas as pd
 from train_model import Trainer
 
 def get_best_hyperparams(config, results_file, fine_tune=False):
+    '''
+    This function computes the best hyperparameters for training the final model
+
+    After training and doing a repeated hyperparameter search and cross-validation
+    the best hyperaparameters need to be computed. This is for most cases computed 
+    as the average of all runs, except for the categorical parameters (majority voting).
+    The config is updated with these hyperparameters and returned.
+
+    Parameters
+    ----------
+    config : dict
+        The config file - usually config.yaml
+    results_file : str
+        Will be e.g. output-path/dataset/run/fine_tuned/hyperparameters.csv and hold
+        best hyperparameters for all runs
+    fine_tine: bool
+        Whether we are computing the best hyperparameters for the fine-tuning case 
+        or training from scratch (different hyperparameters for each) 
+        
+    Returns
+    -------
+    dict
+        The updated config with the best hyperparameters
+    '''
     
     df = pd.read_csv(results_file, delimiter=',')
     best_hyperparams = dict()
@@ -29,7 +53,32 @@ def get_best_hyperparams(config, results_file, fine_tune=False):
     return config
 
 def run_experiment(config, path_run_dir, results_file, fine_tune=False, verbose=False):
+    '''
+    This main function - conducts the whole experiment for either fine-tuning or training
+    from scratch.
 
+    In this function first a hyperparameter search is performed (repeated config['searches_per_fold']
+    times for each k-fold) and the best hyperaparemeters for each run are stored. Then the 
+    best overall hyperparameters are computed (as an average of all runs) and a model is trained
+    with these hyperparameters.
+
+    Parameters
+    ----------
+    config : dict
+        The config file - usually config.yaml
+    path_run_dir : str
+        The path where training outputs will be stored, either 
+        output_path/dataset/run/fine_tuned or output_path/dataset/run/train_from_scratch
+    results_file: str
+        Will be e.g. output-path/dataset/run/fine_tuned/hyperparameters.csv and hold
+        best hyperparameters for all runs
+    fine_tine: bool
+        Whether we are computing the best hyperparameters for the fine-tuning case 
+        or training from scratch (different hyperparameters for each) 
+    verbose: bool
+        Whether or not to print training updates
+
+    '''
     with open(results_file, 'w') as csv_file:
        
         writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)

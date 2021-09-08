@@ -4,12 +4,40 @@ import yaml
 import json
 import numpy as np
 
-# get config
 def get_config(config):
+    '''
+    Reads the config file and loads into a dict
+
+    Parameters
+    ----------
+    config : str
+        The config file - usually config.yaml
+    Returns
+    -------
+    dict
+        The loaded config file
+    '''
     with open(config, 'r') as stream:
         return yaml.load(stream, yaml.SafeLoader)
     
 def get_best_model(run_paths_list):
+    '''
+    Returns the best model from a list of models
+
+    This function computes the average pearson correlation coefficient for each model
+    and returns the best performing model and pearson value for that model
+
+    Parameters
+    ----------
+    run_paths_list : list
+        A list of paths of different model runs
+    Returns
+    -------
+    int
+        The id of the best model
+    float
+        The pearson correlation coefficient of the best model
+    '''
     # get average pearson for each model
     pearson_scores = np.zeros(len(run_paths_list))
     for idx, path_run_dir in enumerate(run_paths_list):
