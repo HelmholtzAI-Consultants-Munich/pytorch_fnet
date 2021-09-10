@@ -1,12 +1,13 @@
 data_path: ./data # path to the directory of your tiff images
 output_path: ./outputs # path where you want to save workflow outputs, i.e. trained models, predicted images etc.
-dataset: acquisition_190821 # the name of your dataset, should correspond to directory name within your data_path
+dataset: toy_dataset # the name of your dataset, should correspond to directory name within your data_path
 path_model_dir: ["./saved_models/pretrained_model"] # the path to the pre-trained model
 signal_channel: 3 # the channel id of the brightfield image
 target_channel: 2 # the channel id of the infection image - set to None if only going to use first part of workflow and you don't have a dataset with infection marker
 dapi_channel: 0 # the channel id of the DAPI image - set to None if only going to use first part of workflow and you don't have a dataset with DAPI marker
 train_size: 0.8 # defines train-test split
-kfolds: 5 # number of folds for cross validation
+kfolds: 1 # number of folds for cross validation - set to 1 if you do not wish to apply cross-fold validation
+val_size: 0.1 # specify percentage of train split to be used for validation if  cross validation is not applied
 searches_per_fold: 5 # number of times to repeat a hyperparameter search for a specific k-fold 
 run: '2008211533' # name of experiment
 
@@ -36,7 +37,7 @@ min_dif: 0.05
 max_dif: 1
 
 class_dataset: 'TiffDataset'
-gpu_ids: 0 # set to -1 if you do not have a gpu - not recommended!
+gpu_ids: -1 # set to -1 if you do not have a gpu - not recommended!
 seed: 1
 print_iter: 200
 nn_module: 'fnet_nn_2d'

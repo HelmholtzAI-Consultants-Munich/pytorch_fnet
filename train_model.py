@@ -22,7 +22,7 @@ import joblib
 from datetime import datetime
 
 class Trainer(object):
- """This class holds all training related functions and parameters
+    """This class holds all training related functions and parameters
 
     Parameters
     ----------
@@ -153,9 +153,7 @@ class Trainer(object):
         #print(ds)
         
         if not validation:
-            assert len(ds)>=self.config['buffer_size'], 'buffer_size cannot be larger than \
-            the training data. Please set buffer_size in the config smaller or equal to your \
-            training data size and try again. Exiting.'
+            assert len(ds)>=self.config['buffer_size'], 'buffer_size cannot be larger than the training data. Please set buffer_size in the config smaller or equal to your training data size and try again. Exiting.'
             ds_patch = fnet.data.BufferedPatchDataset(
                 dataset = ds,
                 patch_size = self.config['patch_size'],

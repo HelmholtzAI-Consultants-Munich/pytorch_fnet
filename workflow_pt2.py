@@ -60,7 +60,7 @@ if __name__ == '__main__':
     path_dataset_csv_paths = os.path.join(config['data_path'], 'csvs', config['dataset']) 
     path_dataset_train_csv = os.path.join(path_dataset_csv_paths, 'train.csv') 
     # create splits of dataset used for training into train-val - number of splits is defined by config['kfolds']
-    command_str = f"python scripts/python/split_dataset.py {path_dataset_train_csv} {path_dataset_csv_paths} --kfolds {config['kfolds']} -v"
+    command_str = f"python scripts/python/split_dataset.py {path_dataset_train_csv} {path_dataset_csv_paths} --kfolds {config['kfolds']} --val_split {config['val_size']} -v"
     os.system(command_str)
     
     # save the config file to a temp.json file - used as argument to script call below
