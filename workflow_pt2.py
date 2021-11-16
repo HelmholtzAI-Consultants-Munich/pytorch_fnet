@@ -67,25 +67,31 @@ if __name__ == '__main__':
     temp_json_config = './temp.json'
     with open(temp_json_config, "w") as fp:
         json.dump(config, fp)
-   
-    # run a training experiment while finetuning the existing model
-    command_str = f"python train_experiment.py {temp_json_config} --fine_tune --verbose"
-    os.system(command_str)
-
-    # run a training experiment by training the model from scratch
-    command_str = f"python train_experiment.py {temp_json_config} --verbose"
-    os.system(command_str)
-
-    # setup the output paths of these experiments where results will be stored
-    output_path_finetune = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
-    output_path_train_scratch = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
     
-    #set up also the paths to the stored models
-    config['prediction']['return_score'] = True
-    models = [output_path_finetune, output_path_train_scratch, config['path_model_dir'][0]]
-    config['path_model_dir'] = models
+    # models holds paths of all models which will be compared in predict later
+    #models = [config['path_model_dir'][0]]
     pretrained_results_path = os.path.join(config['output_path'], config['dataset'], 'pretrained')
-    config['path_run_dir'] = [output_path_finetune, output_path_train_scratch, pretrained_results_path]
+    config['path_run_dir'] = [pretrained_results_path]
+
+    if config['training']['method'] == 'fine-tune' or config['training']['method'] == 'both':
+        # run a training experiment while finetuning the existing model
+        command_str = f"python train_experiment.py {temp_json_config} --fine_tune --verbose"
+        os.system(command_str)
+        output_path_finetune = os.path.join(config['output_path'], config['dataset'], config['run'], 'fine_tuned')
+        config['path_model_dir'].append(output_path_finetune) # models
+        config['path_run_dir'].append(output_path_finetune)
+
+    if config['training']['method'] == 'from-scratch' or config['training']['method'] == 'both':
+        # run a training experiment by training the model from scratch
+        command_str = f"python train_experiment.py {temp_json_config} --verbose"
+        os.system(command_str)
+        output_path_train_scratch = os.path.join(config['output_path'], config['dataset'], config['run'], 'train_from_scratch')
+        config['path_model_dir'].append(output_path_train_scratch) # models
+        config['path_run_dir'].append(output_path_train_scratch)
+   
+    # store pearson correlation metrics for each model on test set
+    config['prediction']['return_score'] = True 
+    #config['path_model_dir'] = models
     
     # update the stored config
     temp_json_config = './temp.json'
@@ -98,7 +104,7 @@ if __name__ == '__main__':
     
     # find the model with the best pearson correlation coefficient
     id_max, pearson_score = get_best_model(config['path_run_dir'])
-    print("THE BEST MODEL IS: {} WITH A PEARSON CORRELATION COEFFICIENT OF: {}".format(models[id_max], pearson_score))
-    print("RESULTS FROM THIS MODEL CAN BE FOUND IN: ", ('/').join([models[id_max], 'results']))
+    print("THE BEST MODEL IS: {} WITH A PEARSON CORRELATION COEFFICIENT OF: {}".format(config['path_model_dir'][id_max], pearson_score))
+    print("RESULTS FROM THIS MODEL CAN BE FOUND IN: ", ('/').join([config['path_model_dir'][id_max], 'results']))
     
     os.remove(temp_json_config) # remove the temp file

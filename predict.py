@@ -61,11 +61,11 @@ def get_dataset(config, propper):
     )
     return dataloader, ds_patch
 
-
-def save_tiff_and_log(tag, ar, path_tiff_dir, entry, path_log_dir):
+def save_tiff_and_log(tag, ar, filename_tiff, entry, path_log_dir):
+    path_tiff_dir = os.path.join(path_log_dir, filename_tiff)
     if not os.path.exists(path_tiff_dir):
         os.makedirs(path_tiff_dir)
-    path_tiff = os.path.join(path_tiff_dir, '{:s}.tiff'.format(tag))
+    path_tiff = os.path.join(path_tiff_dir, '{:s}_{:s}.tiff'.format(tag, filename_tiff))
     print('saved:', path_tiff)
     tifffile.imsave(path_tiff, ar)
     entry['path_' + tag] = os.path.relpath(path_tiff, path_log_dir)
@@ -140,22 +140,26 @@ def main():
                 
                 if target is not None:
                     pearson[path_run_dir][entry['file']] = pearsonr(prediction, target)
-                    target_img = target_img.numpy()[0, ]
+                    target_img = target_img.numpy()[0, ].astype(np.float32)
                     
                 signal_img = signal_img.numpy()[0, ]
-    
-                if not config['prediction']['no_signal']:
-                    save_tiff_and_log('signal', signal_img, path_tiff_dir, entry, path_save_dir)
-                if not config['prediction']['no_target'] and target is not None:
-                    save_tiff_and_log('target', target_img.astype(np.float32), path_tiff_dir, entry, path_save_dir)
-                
                 prediction = prediction.squeeze().numpy()#[0, ]
+                config_preds = config['prediction']
+                
+                if not config['prediction']['no_signal']:
+                    signal_img = propper.undo_last(signal_img)
+                    save_tiff_and_log('signal', signal_img, filename, entry, path_save_dir)
+                
+                if not config['prediction']['no_target'] and target is not None:
+                    target_img = propper.undo_last(target_img)
+                    save_tiff_and_log('target', target_img, filename, entry, path_save_dir)
+                
                 if not config['prediction']['no_prediction'] and prediction is not None:
-                    save_tiff_and_log('prediction_{:s}'.format(name_model), prediction.astype(np.float32), path_tiff_dir, entry, path_save_dir)
+                    save_tiff_and_log('prediction_{:s}'.format(name_model), prediction, filename, entry, path_save_dir)
                 if not config['prediction']['no_prediction_unpropped']:
                     #ar_pred_unpropped = propper.undo_last(prediction.numpy()[0, ])
-                    ar_pred_unpropped = propper.undo_last(prediction)
-                    save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped.astype(np.float32), path_tiff_dir, entry, path_save_dir)
+                    ar_pred_unpropped = propper.undo_last(prediction.astype(np.float32))
+                    save_tiff_and_log('prediction_{:s}_unpropped'.format(name_model), ar_pred_unpropped, filename, entry, path_save_dir)
                 
                 entries.append(entry)
                 predicted_patches = []
