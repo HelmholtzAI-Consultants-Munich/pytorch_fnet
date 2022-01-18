@@ -42,7 +42,7 @@ def main():
     parser.add_argument('src_csv', help='path to dataset CSV')
     parser.add_argument('dst_dir', help='destination directory of dataset split')
     parser.add_argument('--kfolds', type=int, default=-1, help='if you want k-fold validation specify number of folds')
-    parser.add_argument('--val_split', default=0.1, help='if you dont use cross-validation define how to split data')
+    parser.add_argument('--val_split', type=float, default=0.1, help='if you dont use cross-validation define how to split data')
     parser.add_argument('--train_size', type=int_or_float, default=0.8, help='training set size as int or faction of total dataset size')
     parser.add_argument('--seed', type=int, default=42, help='random seed')
     parser.add_argument('--no_shuffle', action='store_true', help='random seed')
@@ -68,7 +68,7 @@ def main():
     if opts.kfolds==1:
         path_train_csv = os.path.join(path_store_split, 'train_1.csv')
         path_test_csv = os.path.join(path_store_split, 'val_1.csv')
-        do_simple_split(path_train_csv, path_test_csv, 1-opts.val_split, df_all, vprint)
+        do_simple_split(path_train_csv, path_test_csv, 1.-opts.val_split, df_all, vprint)
     
     # or into k-folds
     elif opts.kfolds>1:
