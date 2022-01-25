@@ -86,15 +86,11 @@ def compute_dataset_min_max_ranges(train_path, val_path=None, norm=False):
     min_dapi = []
     max_dapi = []
     
-    if df.iloc[0,:]['target_channel'] is None:
-        no_target = True
-    else:
-        no_target = False
+    if df.iloc[0,:]['target_channel'] is None: no_target = True
+    else: no_target = False
         
-    if df.iloc[0,:]['dapi_channel'] is None:
-        no_dapi = True
-    else:
-        no_dapi = False
+    if df.iloc[0,:]['dapi_channel'] is None: no_dapi = True
+    else: no_dapi = False
         
     for index in range(len(df)):
         element=df.iloc[index, :]
@@ -102,8 +98,12 @@ def compute_dataset_min_max_ranges(train_path, val_path=None, norm=False):
         
         if not no_target:
             image_infection = image[element['target_channel'],:,:]
-            min_inf.append(np.min(image_infection))
-            max_inf.append(np.max(image_infection))
+            if norm:
+                min_inf.append(np.min(normalize(image_infection)))
+                max_inf.append(np.max(normalize(image_infection)))
+            else:
+                min_inf.append(np.min(image_infection))
+                max_inf.append(np.max(image_infection))
         
         if not no_dapi:
             image_dapi = image[element['dapi_channel'],:,:]
@@ -125,5 +125,4 @@ def compute_dataset_min_max_ranges(train_path, val_path=None, norm=False):
     min_bright = np.min(np.array(min_bright))
     max_bright = np.max(np.array(max_bright))
 
-        
     return [min_bright, max_bright], [min_inf, max_inf], [min_dapi, max_dapi]        

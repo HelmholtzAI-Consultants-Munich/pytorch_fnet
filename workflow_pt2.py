@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 import yaml
 import json
 import numpy as np
+from fnet.functions import compute_dataset_min_max_ranges
 
 def get_config(config):
     '''
@@ -19,7 +20,36 @@ def get_config(config):
     '''
     with open(config, 'r') as stream:
         return yaml.load(stream, yaml.SafeLoader)
+
+def make_dataset_csv(config):
+    '''
+    This function creates a csv file with the path of the images in the dataset and the channel id of the brightfield, 
+    DAPI and infection channels. It saves the csv file in a folder named 'csvs' within your config['data_path'] directory.
     
+    Parameters
+    ----------
+    config : dict
+        The config file - usually config.yaml
+    '''
+    
+    file_dir = os.path.join(config['data_path'], config['dataset']) 
+    if not os.path.exists(os.path.join(config['data_path'], 'csvs')):
+        os.mkdir(os.path.join(config['data_path'], 'csvs'))
+        
+    write_file = os.path.join(config['data_path'], 'csvs', ('.').join([config['dataset'],'csv'])) 
+    channel_id, target_id, dapi_id, data_id = config['signal_channel'], config['target_channel'], config['dapi_channel'], config['dataset']
+
+    with open(write_file, 'w', newline='') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(['file','signal_channel', 'target_channel', 'dapi_channel', 'dataset'])
+
+        for (dirpath, dirnames, filenames) in os.walk(file_dir):
+            for file in filenames:
+                if file.endswith('.tif'):
+                    filename = os.path.join(dirpath, file)
+                    writer.writerow([filename, channel_id, target_id, dapi_id, data_id])
+    csv_file.close()
+
 def get_best_model(run_paths_list):
     '''
     Returns the best model from a list of models
@@ -55,10 +85,40 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
     config = get_config(args.config) # get the config.yaml file as a dictionary
+
+    # create a csv file with list of images in dataset if it doesn't already exist
+    path_dataset_csv = os.path.join(config['data_path'], 'csvs', ('.').join([config['dataset'],'csv'])) 
+    if not os.path.isfile(path_dataset_csv):
+        make_dataset_csv(config)
     
     # define the paths where the data will be saved 
     path_dataset_csv_paths = os.path.join(config['data_path'], 'csvs', config['dataset']) 
     path_dataset_train_csv = os.path.join(path_dataset_csv_paths, 'train.csv') 
+    # if train.csv doesn't exist already (from workflow_pt1) create it
+    if not os.path.isfile(path_dataset_train_csv):
+        command_str = f"python scripts/python/split_dataset.py {path_dataset_csv} {path_dataset_csv_paths} --train_size {config['train_size']} -v"
+        os.system(command_str)
+    
+    # if dataset min-max has not been computed in workflow_pt1:
+    if 'intensities' not in config:
+        config['intensities'] = {}
+        # get min max values this may be needed later for normalisation
+        min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(path_dataset_train_csv)
+        min_max_bright_norm, min_max_infection_norm, _ = compute_dataset_min_max_ranges(path_dataset_train_csv, norm=True)
+        config['intensities']['max_infection'] = int(min_max_infection[1])
+        config['intensities']['min_infection'] = int(min_max_infection[0])
+        config['intensities']['max_norm_infection'] = float(min_max_infection_norm[1])
+        config['intensities']['min_norm_infection'] = float(min_max_infection_norm[0])
+        config['intensities']['max_brightfield'] = int(min_max_bright[1])
+        config['intensities']['min_brightfield'] = int(min_max_bright[0])
+        config['intensities']['max_norm_brightfield'] = float(min_max_bright_norm[1])
+        config['intensities']['min_norm_brightfield'] = float(min_max_bright_norm[0])
+        config['intensities']['max_dapi'] = int(min_max_dapi[1])
+        config['intensities']['min_dapi'] = int(min_max_dapi[0])
+        # update the config
+        with open(args.config, "w") as fp:
+            json.dump(config, fp, indent=4)
+
     # create splits of dataset used for training into train-val - number of splits is defined by config['kfolds']
     command_str = f"python scripts/python/split_dataset.py {path_dataset_train_csv} {path_dataset_csv_paths} --kfolds {config['kfolds']} --val_split {config['val_size']} -v"
     os.system(command_str)

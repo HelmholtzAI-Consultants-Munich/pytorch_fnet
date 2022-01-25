@@ -1,3 +1,6 @@
+temp.json
+test_norm.py
+config_local.yaml
 .DS_Store
 outputs/
 ./aicsimage/.DS_Store
@@ -8,5 +11,4 @@ results/
 data/*/
 data/csvs/
 data/csvs/*/
-
 tmp/

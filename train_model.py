@@ -3,7 +3,7 @@ import os
 
 import fnet.data
 import fnet.fnet_model
-from fnet.functions import compute_dataset_min_max_ranges, pearsonr
+from fnet.functions import pearsonr
 from fnet.transforms import Propper
 
 import json
@@ -122,15 +122,25 @@ class Trainer(object):
         torch.utils.data.DataLoader
             The dataloader - either for training or validation
         '''
-        min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(self.path_dataset_train_csv, self.path_dataset_val_csv)
-        min_max_bright_norm, _, _ = compute_dataset_min_max_ranges(self.path_dataset_train_csv, self.path_dataset_val_csv, norm=True)
 
-        transform_signal=[]
+        transform_signal = []
+        transform_target = []
         for t in self.config['preprocessing']['transform_signal']:
             if t=='fnet.transforms.AdaptRange':
-                t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(min_max_bright_norm[0], min_max_bright_norm[1])  
+                i_t = self.config['preprocessing']['transform_signal'].index('fnet.transforms.AdaptRange')
+                if i_t>0 and 'fnet.transforms.normalize' in self.config['preprocessing']['transform_signal'][:i_t]:
+                    t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(self.config['intensities']['min_norm_brightfield'], self.config['intensities']['max_norm_brightfield'])  
+                else:
+                    t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(self.config['intensities']['min_brightfield'], self.config['intensities']['max_brightfield'])  
             transform_signal.append(eval(t))
-        transform_target = [eval(t) for t in self.config['preprocessing']['transform_target']]
+        for t in self.config['preprocessing']['transform_target']:
+            if t=='fnet.transforms.AdaptRange':
+                i_t = self.config['preprocessing']['transform_target'].index('fnet.transforms.AdaptRange')
+                if i_t>0 and 'fnet.transforms.normalize' in self.config['preprocessing']['transform_target'][:i_t]:
+                    t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(self.config['intensities']['min_norm_infection'], self.config['intensities']['max_norm_infection'])  
+                else:
+                    t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(self.config['intensities']['min_infection'], self.config['intensities']['max_infection'])  
+            transform_target.append(eval(t))            
         transform_thresh = []
         
         if validation:
@@ -145,9 +155,9 @@ class Trainer(object):
             transform_source = transform_signal,
             transform_target = transform_target,
             transform_thresh = transform_thresh,
-            min_max_bright = min_max_bright, 
-            min_max_dapi = min_max_dapi, 
-            min_max_infection = min_max_infection,
+            min_max_bright = [self.config['intensities']['min_brightfield'], self.config['intensities']['max_brightfield']], 
+            min_max_dapi = [self.config['intensities']['min_dapi'], self.config['intensities']['max_dapi']], 
+            min_max_infection = [self.config['intensities']['min_infection'], self.config['intensities']['max_infection']],
             augmentations = self.config['training']['augmentations'] if not validation else False
         )
         #print(ds)

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 import yaml
 import csv
 import json
-
+from fnet.functions import compute_dataset_min_max_ranges
 
 def get_config(config):
     '''
@@ -67,7 +67,27 @@ if __name__ == '__main__':
     new_csvs_path = os.path.join(config['data_path'], 'csvs', config['dataset'])
     command_str = f"python scripts/python/split_dataset.py {path_dataset_csv} {new_csvs_path} --train_size {config['train_size']} -v"
     os.system(command_str)
-    
+
+    if 'intensities' not in config:
+        # get min max values this may be needed later for normalisation
+        path_dataset_train_csv = os.path.join(new_csvs_path, 'train.csv')
+        config['intensities'] = {}
+        min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(path_dataset_train_csv)
+        min_max_bright_norm, min_max_infection_norm, _ = compute_dataset_min_max_ranges(path_dataset_train_csv, norm=True)
+        config['intensities']['max_infection'] = int(min_max_infection[1])
+        config['intensities']['min_infection'] = int(min_max_infection[0])
+        config['intensities']['max_norm_infection'] = float(min_max_infection_norm[1])
+        config['intensities']['min_norm_infection'] = float(min_max_infection_norm[0])
+        config['intensities']['max_brightfield'] = int(min_max_bright[1])
+        config['intensities']['min_brightfield'] = int(min_max_bright[0])
+        config['intensities']['max_norm_brightfield'] = float(min_max_bright_norm[1])
+        config['intensities']['min_norm_brightfield'] = float(min_max_bright_norm[0])
+        config['intensities']['max_dapi'] = int(min_max_dapi[1])
+        config['intensities']['min_dapi'] = int(min_max_dapi[0])
+        # update the config
+        with open(args.config, "w") as fp:
+            json.dump(config, fp, indent=4)
+
     config['path_run_dir'] = [os.path.join(config['output_path'], config['dataset'], 'pretrained')]
     # save the config file to a temp.json file - used as argument to script call below
     temp_json_config = './temp.json'

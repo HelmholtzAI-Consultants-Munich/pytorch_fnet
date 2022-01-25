@@ -19,18 +19,26 @@ def set_warnings():
 
 def get_dataset(config, propper):
 
-    path_csvs = os.path.join(config['data_path'], 'csvs')
-    path_dataset_csv = os.path.join(path_csvs, ('.').join([config['dataset'],'csv'])) 
     path_test_dataset_csv = os.path.join(config['data_path'], 'csvs', config['dataset'], 'test.csv') #path_dataset_test_csv: ["./data/csvs/new_exp_eg/test.csv"]
-    min_max_bright, min_max_infection, min_max_dapi = compute_dataset_min_max_ranges(path_dataset_csv)
-    min_max_bright_norm, _, _ = compute_dataset_min_max_ranges(path_dataset_csv, norm=True)
 
-    transform_signal=[]
+    transform_signal = []
+    transform_target = []
     for t in config['preprocessing']['transform_signal']:
         if t=='fnet.transforms.AdaptRange':
-            t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(min_max_bright_norm[0], min_max_bright_norm[1])  
+            i_t = config['preprocessing']['transform_signal'].index('fnet.transforms.AdaptRange')
+            if i_t>0 and 'fnet.transforms.normalize' in config['preprocessing']['transform_signal'][:i_t]:
+                t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(config['intensities']['min_norm_brightfield'], config['intensities']['max_norm_brightfield'])  
+            else:
+                t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(config['intensities']['min_brightfield'], config['intensities']['max_brightfield'])  
         transform_signal.append(eval(t))
-    transform_target = [eval(t) for t in config['preprocessing']['transform_target']]
+    for t in config['preprocessing']['transform_target']:
+        if t=='fnet.transforms.AdaptRange':
+            i_t = config['preprocessing']['transform_target'].index('fnet.transforms.AdaptRange')
+            if i_t>0 and 'fnet.transforms.normalize' in config['preprocessing']['transform_target'][:i_t]:
+                t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(config['intensities']['min_norm_infection'], config['intensities']['max_norm_infection'])  
+            else:
+                t = 'fnet.transforms.AdaptRange({:f},{:f})'.format(config['intensities']['min_infection'], config['intensities']['max_infection'])  
+        transform_target.append(eval(t))   
     transform_thresh = []
 
     transform_signal.append(propper)
@@ -42,9 +50,9 @@ def get_dataset(config, propper):
         transform_source = transform_signal,
         transform_target = transform_target,
         transform_thresh = transform_thresh,
-        min_max_bright = min_max_bright, 
-        min_max_dapi = min_max_dapi, 
-        min_max_infection = min_max_infection)
+        min_max_bright = [config['intensities']['min_brightfield'], config['intensities']['max_brightfield']], 
+        min_max_dapi = [config['intensities']['min_dapi'], config['intensities']['max_dapi']], 
+        min_max_infection = [config['intensities']['min_infection'], config['intensities']['max_infection']],)
 
     
     ds_patch = fnet.data.AllPatchesDataset(

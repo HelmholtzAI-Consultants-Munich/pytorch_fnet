@@ -79,10 +79,9 @@ class TiffDataset(FnetDataset):
             for t in self.transform_thresh:
                 thresh_img = t(thresh_img)
                 dif = t(dif)
-
+        # apply same transfroms to target and dapi
         if self.transform_target is not None and (len(im_out) > 1):
             for t in self.transform_target: 
-
                 im_out[1] = t(im_out[1])
                 im_out[2] = t(im_out[2])
         
