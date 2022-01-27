@@ -140,7 +140,9 @@ def main():
             if is_last:
                 predicted_patches.append(prediction)
                 entry = get_prediction_entry(ds, idx)
-                filename=entry['file'].split('/')[-1].split('.')[0]
+                split_path = os.path.split(entry['file']) #entry['file'].split('/')
+                filename = split_path[-1].split('.')[0]
+                #filename=entry['file'].split('/')[-1].split('.')[0]
                 prediction = ds.repatch(predicted_patches)
                 # save images
                 path_tiff_dir = os.path.join(path_save_dir, filename)

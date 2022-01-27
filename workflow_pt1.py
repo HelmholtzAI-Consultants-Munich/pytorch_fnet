@@ -4,6 +4,8 @@ import yaml
 import csv
 import json
 from fnet.functions import compute_dataset_min_max_ranges
+import warnings
+warnings.filterwarnings("ignore")
 
 def get_config(config):
     '''
