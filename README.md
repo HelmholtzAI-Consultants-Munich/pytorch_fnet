@@ -1,5 +1,9 @@
 # Predicting infection from microscopy images of unlabelled cells
 
+![stability-frozen](https://img.shields.io/badge/stability-frozen-brightgreen.svg)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/HelmholtzAI-Consultants-Munich/pytorch_fnet)
+
+
 ## What is this?
 This branch has been forked from [release1](https://github.com/AllenCellModeling/pytorch_fnet/tree/release_1) which was then developed into a workflow for the generation of cell infection markers from brightfield microscopy images. The workflow is described in the image below.
 
